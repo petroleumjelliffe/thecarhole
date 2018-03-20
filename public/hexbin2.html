@@ -1,0 +1,229 @@
+"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+.frame {
+  fill: none;
+  stroke: #000;
+}
+.sea  {
+  fill: #0cf;
+}
+.land {
+  fill:#ceab73;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+
+
+</style>
+</head>
+<body>
+  <canvas width="600" height="600" id="canvas"></canvas>
+  <svg width="600" height="600"></svg>
+
+  <!-- <button onclick="update()">GO</button> -->
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
+
+<script>
+  //get the svg element
+  var svg = d3.select("svg"),
+      margin = {top: 20, right: 20, bottom: 30, left: 40},
+      width = +svg.attr("width") - margin.left - margin.right,
+      height = +svg.attr("height") - margin.top - margin.bottom;
+
+  var i = 24,
+      w = width/i,
+      h = w * Math.cos(Math.PI/6),
+      j = height/h
+  console.log(`i: ${i}, j: ${j}`);
+
+  //set the scales
+  // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+  var x = d3.scaleLinear()
+    .domain([0,i])
+    .range([0, width])
+
+  var y = d3.scaleLinear()
+    .domain([0,j])
+    .range([height-7, 0-7])
+
+
+  var canvas = document.getElementById("canvas")
+  var ctx = canvas.getContext("2d")
+
+  var map = new Image();
+  map.crossOrigin = 'http://maps.googleapis.com/crossdomain.xml';
+  // map.src = "http://maps.googleapis.com/maps/api/staticmap?scale=2&center=" + latlon + "&zoom=13&size=1024x160&sensor=false&visual_refresh=true";
+  // map.src="images/staticmap3.png"
+  map.src="https://cdn.glitch.com/3afcc206-1a67-4277-8c8a-57095b1a09cd%2Fstaticmap3.png?1519443527090"
+
+  map.onload = function(){
+    ctx.drawImage(map, 0, 0, width, height)
+
+    var dots=[]
+
+    // Get the RGB colors at the given random pixel
+
+    // var pixels = ctx.getImageData(x, y, 1, 1).data;
+    var color = ctx.getImageData(100, 100, 1, 1).data
+    console.log(`R:${color[0]}, G:${color[1]}, B:${color[2]}, A:${color[3]}, `);
+
+    for (var row=0; row < j; row++) {
+      for (var col=0; col < i; col++) {
+        var x1=(col+(1-row%2)*.5)
+        var color = ctx.getImageData(x(col), y(row), 1, 1).data
+        console.log(`R:${color[0]}, G:${color[1]}, B:${color[2]}, A:${color[3]}, `);
+        // console.log(`${x(col)}, ${y(row)}`);
+        dots.push({
+          x: x1,
+          y: row,//*Math.sin(Math.PI/3)*2,
+          terrain:  (color[0]>0?"land":"sea")
+        })
+        //x
+        // x((row%2+1*.5)+col)
+        // //y
+        // y(row)
+      }
+    }
+
+    //generate the hexbin
+    update(i, j, dots)
+  }
+
+
+
+  // var n = 12
+  var r = width/i/(2*Math.sin(Math.PI/3))
+  console.log(r);
+  console.log(width/5.25*2);
+
+
+
+
+    // console.log(dots);
+
+  //hexbin generator
+  //width of each hexagon is radius × 2 × sin(π / 3)
+  //n hexagons across is width/n = radius * 2 * sin(PI/3)
+  //radius = width/n/(2*sin(PI/3))
+  var hexbin = d3.hexbin()
+  // .radius(width/5.25*2)
+    .radius(r)
+    .size([height, width])
+    .x(function(d) {return x(d.x)})
+    .y(function(d) {return y(d.y)})
+
+  //create the parent element
+  var g = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  //set the axes
+  var gx = g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+
+  var gy = g.append("g")
+      .attr("class", "axis axis--y")
+
+
+
+  var update = function(i, j, dots) {
+
+
+      gx.call(d3.axisBottom(x)
+        .ticks(7)
+      )
+
+      // gy.call(yAxis)
+
+      //** SELECT, ENTER, UPDATE, EXIT **
+      //select existing bars, if any
+      var select = g.selectAll(".ghex")
+        .data(hexbin(dots))//, function(d) {console.log(d); return d})
+
+      //new items
+      var enter =  select.enter().append("g")
+        .attr("class", "ghex")
+
+      enter.append("path")
+        .attr("class", "hex")
+
+      enter.selectAll("circle")
+        .data(function(d,i){console.log(d);return d})
+        .enter().append("circle")
+        .attr("class", "dot")
+        .attr("r", 1)
+        .attr("cx", function(d) {return x(d.x)})
+        .attr("cy", function(d) {return y(d.y)})
+
+      //update the existing and new elements
+      var update = select.merge(enter)
+
+      //update properties for new and existing items
+      update.select(".hex")
+        .attr("d", hexbin.hexagon())
+        .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; })
+        .attr("class", function(d) {console.log(d);return d[0].terrain})
+
+      update.select(".dot")
+        .attr("")
+
+
+      //remove old ones
+      var exit = select.exit()
+      exit.remove()
+
+
+
+    // })
+  }
+
+  // update()
+
+</script>
+</body>
+</html>
