@@ -1,2 +1,2 @@
 # thecarhole
-Weekend projects in the -garage- car hole
+Weekend projects in the ~garage~ car hole
