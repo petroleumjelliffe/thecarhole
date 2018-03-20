@@ -1,0 +1,313 @@
+"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+.frame {
+  fill: none;
+  stroke: #000;
+}
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+svg {
+  fill: #ccc;
+}
+
+</style>
+</head>
+<body>
+  <svg width="400" height="250"></svg>
+    <p id="output">
+
+    </p>
+
+  <form method="get" id="coords" >
+    <input type="button" value="locate" onclick="geoFindMe()">
+    <input type="text" name="lat" id="lat">
+    <input type="text" name="lon" id="lon">
+    <input type="button" value="GO" onclick="update()">
+
+  </form>
+  <!-- <button onclick="update()">GO</button> -->
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+    //get the svg element
+    var svg = d3.select("svg"),
+        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
+
+    var defs = svg.append("defs");
+    var gradient = defs.append("linearGradient")
+       .attr("id", "svgGradient")
+       .attr("x1", "0%")
+       .attr("x2", "0%")
+       .attr("y1", "0%")
+       .attr("y2", "100%")
+       .attr("gradientUnits","userSpaceOnUse")
+
+     //set the color gradient
+     var gradhigh = gradient.append("stop")
+        .attr('class', 'start')
+        .attr("offset", "0%")
+        // .attr("stop-color", colors(tempMax))
+        .attr("stop-opacity", 1);
+
+     var gradlow =  gradient.append("stop")
+        .attr('class', 'end')
+        .attr("offset", "100%")
+        // .attr("stop-color", colors(tempMin))
+        .attr("stop-opacity", 1);
+
+
+
+    //set the scales
+    // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+    var x2 = d3.scaleBand()
+      .range([0, width-margin.left-margin.right])
+      .padding(0.2)
+
+    var y = d3.scaleLinear()
+      .range([height-margin.top, 0])
+
+    var colors = d3.scaleLinear()
+      .domain([0,70,100]) //temps
+      .interpolate(d3.interpolateCubehelix)
+      .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,.5)]);
+
+    //create the parent element
+    var g = svg.append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    //set the axes
+    var gx = g.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height + ")")
+
+    var gy = g.append("g")
+        .attr("class", "axis axis--y")
+
+
+  var update = function() {
+    //call the weather api at the specified location
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var url = "/weather"+
+      "?lat="+fieldLat.value+
+      "&lon="+fieldLon.value
+
+    //get the data and update the graph
+    d3.json(url, function(data) {
+      // console.log(data);
+
+      var hourly = data.hourly.data.slice(0,5)
+      console.log(hourly)
+
+      //round the temps
+      var daily = data.daily.data
+        .map(function(d) {
+          d.temperatureMax = Math.round(d.temperatureMax)
+          d.temperatureMin = Math.round(d.temperatureMin)
+          return d
+        })
+      console.log(daily);
+
+      var currentTemp = Math.round(data.currently.temperature)
+      var tempMax = d3.max(daily.map(function(d) {return (d.temperatureMax)}))
+      var tempMin = d3.min(daily.map(function(d) {return (d.temperatureMin)}))
+
+      x2.domain(daily.map(function(d) {return new Date(d.time*1000)}))
+      y.domain([tempMin, tempMax])
+
+      //set the high, low, current temp ticks
+      var yAxis = d3.axisLeft(y)
+      var yTicks = y.ticks(0)
+      yTicks.push(tempMax)
+      yTicks.push(currentTemp)
+      yTicks.push(tempMin)
+      yAxis.tickValues(yTicks)
+      console.log(yTicks);
+
+      gx.call(d3.axisBottom(x2)
+        .ticks(7)
+        .tickFormat(d3.timeFormat("%a")))
+
+      gy.call(yAxis)
+
+      //select existing bars, if any
+      var gbars = g.selectAll(".gbar")
+        .data(daily)//, function(d) {console.log(d); return d})
+
+      //new items
+      var enter =  gbars.enter().append("g")
+        .attr("class", "gbar")
+
+      //add the bars, and high, low text labels
+      enter.append("text")
+        .attr("class", "hightemp")
+
+      enter.append("rect")
+        .attr("class", "bar")
+        .attr("fill", "url(#svgGradient)")
+
+      enter.append("text")
+        .attr("class", "lowtemp")
+
+      //update the existing and new elements
+      var update = gbars.merge(enter)
+      //set x position
+      update.attr("transform", function(d) { return `translate(${x2(new Date(d.time*1000))} ,0)`; })
+
+      update.select(".bar")
+        .attr("y", function(d) { return y(d.temperatureMax); })
+        .attr("width", x2.bandwidth())
+        .attr("height", function(d) { return  y(d.temperatureMin)-y(d.temperatureMax) })
+        // .attr("fill", function(d){return colors(d.temperatureMin)})
+
+      update.select(".hightemp")
+        .text(function(d) {return `${d.temperatureMax}°`})
+        .attr("x", x2.bandwidth() / 2)
+        .attr("y", function(d) { return y(d.temperatureMax) })
+        // .attr("dy", -40)
+        .attr("text-anchor", "middle")
+
+      update.select(".lowtemp")
+        .text(function(d) {return `${d.temperatureMin}°`})
+        .attr("x", x2.bandwidth() / 2)
+        .attr("y", function(d) { return y(d.temperatureMin)+16; })
+        .attr("text-anchor", "middle")
+
+      //remove old ones
+      var exit = gbars.exit()
+      exit.remove()
+
+      //add current temp marker
+      var marker = g.selectAll(".now")
+        .data(hourly)
+
+      var updateMarker = marker.enter().append("line")
+        .attr("class", "now")
+        .merge(marker)
+
+      // var majorTicks = y.ticks(3)
+        // majorTicks.push(32)
+
+      var gticks = g.selectAll(".lines")
+        .data(y.ticks(3))
+        // .exit().remove()
+      var enterTicks = gticks
+        .enter().append("g")
+        .attr("class","lines")
+
+      enterTicks.append("line")
+        // .attr("class")
+
+
+      var updateTicks= enterTicks.merge(gticks)
+
+      updateTicks.select("line")
+        .attr("x1", function(d) {return x2.range()[0]+1})
+        .attr("y1", function(d) {return y(d)})
+        .attr("x2", function(d) {return x2.range()[1]})
+        .attr("y2", function(d) {return y(d)})
+        .attr("stroke-width", 3)
+        .attr("stroke", "white")
+
+      gticks.exit().remove
+
+      updateMarker.attr("x1", x2.range()[0])
+        .attr("y1", function(d) {console.log(d.temperature); return y(d.temperature)})
+        .attr("x2", x2.bandwidth())
+        .attr("y2", function(d) {return y(d.temperature)})
+        .attr("stroke-width", 2)
+        .attr("stroke", "red")
+        .attr("stroke-opacity",function(d,i, arr) {return 1-i/arr.length})
+
+        gradhigh.attr("stop-color", colors(tempMax))
+        gradlow.attr("stop-color", colors(tempMin))
+
+      })
+  }
+
+  function geoFindMe() {
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var output = document.getElementById('output')
+
+    if (!navigator.geolocation){
+      output.innerHTML = "<p>Geolocation is not supported by your browser</p>";
+      return;
+    }
+
+    function success(position) {
+      console.log("geo find succcess");
+      var latitude  = position.coords.latitude;
+      var longitude = position.coords.longitude;
+
+      fieldLat.value=latitude
+      fieldLon.value=longitude
+
+      output.innerHTML = ""
+    }
+
+    function error() {
+
+      output.innerHTML = "Unable to retrieve your location";
+    }
+
+    output.innerHTML = "<p>Locating…</p>";
+
+    navigator.geolocation.getCurrentPosition(success, error);
+  }
+
+  // geoFindMe()
+  update()
+
+</script>
+</body>
+</html>
