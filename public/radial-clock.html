@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<head>
+  <title>Radial line generator</title>
+</head>
+
+<style>
+path {
+	fill: none;
+	stroke: #999;
+}
+
+</style>
+<style>
+
+.frame {
+  fill: none;
+  stroke: #000;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #fff;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+.d1 {
+  stroke:black;
+  stroke-width: 1.5px;
+
+}
+
+.m1.d1.y2018 {
+  stroke: red;
+}
+
+svg {
+  background: #fff;
+}
+
+.date:hover {
+  stroke-width:2px;
+}
+
+</style>
+
+
+<body>
+  <!-- <svg width="960" height="500">
+  	<g transform="translate(480,250)"></g>
+  </svg> -->
+  <input type="datetime-local" id="datepicker" value="2018-01-01" onchange="changePicker(this)">
+  <input type="button" onclick="javascript:now.setHours(24);updatePicker(now);">
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script>
+
+
+  var width = 960,
+      height = 640,
+      radius = Math.min(width, height) / 2 - 30;
+
+
+  var r = d3.scaleLinear()
+    .domain([-1, 1])
+    .range([radius-50, radius]);
+
+  var jan1 = new Date(2017,0,1)
+  var now = new Date()
+
+  var updatePicker = function(now) {
+    var input = document.getElementById("datepicker")
+    // input.value= now.toISOString()
+    var string = now.toJSON().slice(0,-1)
+    input.value = string
+    // recenter(string)
+
+  }
+  updatePicker(now)
+
+  var changePicker = function(self) {
+    console.log(self.value);
+    recenter(self.value);
+    now=new Date(self.value.slice(0,-1))
+    // recenter(now)
+
+  }
+
+  var theta1year = d3.scaleLinear()
+    .domain([jan1, new Date(jan1.getTime()+365.25*24*60*60*1000)])
+    .range([0, 2* Math.PI])
+
+  //the current day shown will be the longest line
+  var theta4years = d3.scaleTime()
+    .domain([new Date(now.getTime()+365.25*24*60*60*1000), new Date(now.getTime()-750.5*24*60*60*1000)])
+    .range([-Math.PI/4, 5*Math.PI/4])
+    // .clamp(true)
+
+
+  var spiral = d3.radialLine()
+    .angle(function(d) {return theta1year(d)})
+    // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
+    .radius(function(d) {return r(Math.cos(theta4years(d)))})
+
+  //generate 4 years of of points, centered around 'now'
+  var dates = function(now) {
+    var alldays = d3.timeDays(new Date(now.getFullYear()-2,0,1), new Date(now.getFullYear()+2, 0, 1))
+    .map(function(d) {
+      var tick =[]
+      tick.push(d)
+      tick.push(new Date(d.getTime() + 365.25*24*60*60*1000))
+      return tick;
+    })
+
+    return d3.nest()
+      .key(function(d) {return `y${d[0].getFullYear()}`})
+      .entries(alldays)
+  }
+
+  // var nest_data = dates(now)
+
+  console.log(`M${r(Math.cos(theta4years(now))*Math.sin(theta1year(now)))}`);
+
+  var svg = d3.select("body").append("svg")
+      .attr("width", width)
+      .attr("height", height)
+    .append("g")
+      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+
+
+  function recenter(string) {
+    var date = new Date(string)
+    now = new Date(string)
+
+    var input = d3.selectAll("#datepicker")
+      .data([now])
+      .property("value",function(d){console.log(d.toJSON().slice(0,-1));return d.toJSON().slice(0,-1)})
+      // .attr("style", "background:#00f;")
+
+    //reset the scale to today
+    theta4years.domain([new Date(date.getTime()+730.5*24*60*60*1000), new Date(date.getTime()-365.25*24*60*60*1000)])
+
+    //get a new dataset
+    var nest_data = dates(date)
+
+    //update the diagram
+    update(nest_data);
+  }
+
+  function update(nest_data) {
+    //update current day
+    var labelselect = svg.selectAll(".gNow")
+      .data([now])
+
+    var labelEnter = labelselect.enter()
+      .append("text")
+      .attr("class", "gNow")
+      .attr("text-anchor", "middle")
+
+
+    var labelUpdate = labelselect.merge(labelEnter)
+      .text(function(d) {return d.toDateString()})
+      // .attr("x", function(d) {return width/2})
+      // .attr("y", function(d) {return height/2})
+      .attr("x", function(d) {return 0})
+      .attr("y", function(d) {return 0})
+
+    //** SELECT, ENTER, UPDATE, EXIT **
+    //select existing bars, if any
+    var selectYear = svg.selectAll(".gYear")
+      .data(nest_data)//, function(d) {console.log(d); return d})
+
+    //new items
+    var enterYear =  selectYear.enter()
+      .append("g")
+      .attr("class", "gYear")
+
+    //remove old ones
+    var exitYear = selectYear.exit()
+    exitYear.remove()
+
+    //update the existing and new elements
+    var updateYear = selectYear.merge(enterYear)
+
+    //add the elements, and set static properties
+    var selectDates = updateYear.selectAll(".date")
+      .data(function(d, i) {console.log(d.values); return d.values} )
+
+    var enterDates = selectDates.enter()
+      .append("path")
+      // .attr("class", "date")
+
+    //update the params of the paths
+    var updateDates = selectDates.merge(enterDates)
+      // .attr('d', function(d) {return spiral(d)})
+      // .attr('class', function(d) {return `m${d[0].getMonth()} d${d[0].getDate()} y${d[0].getFullYear()}`})
+      .on("click", function(d) {
+        console.log(d);
+        recenter(d[0].toJSON().slice(0,-1))
+      })
+      .transition().duration(200)
+      .attr('d', function(d) {return spiral(d)})
+      .attr('class', function(d) {return `date y${d[0].getFullYear()} m${d[0].getMonth()} d${d[0].getDate()}`})
+      .attr('visibility', function(d) {
+        if (r(Math.cos(theta4years(d[1]))) > r(Math.cos(theta4years(d[0])))) {
+          return 'visible'
+        }
+        return 'hidden'
+      })
+
+
+    var exitDates = selectDates.exit()
+    exitDates.remove()
+  }
+
+  recenter(now);
+
+  </script>
+</body>
+</html>
