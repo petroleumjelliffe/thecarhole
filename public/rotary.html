@@ -181,6 +181,12 @@ svg {
 
   function dragended(d) {
     d3.select(this).classed("active", false);
+    console.log("ended");
+
+    rotary.transition()
+      .duration(1000)
+      .attr("transform", `rotate(0 ${center[0]} ${center[1]})`)
+
   }
 
 
