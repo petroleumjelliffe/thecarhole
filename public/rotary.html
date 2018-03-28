@@ -140,11 +140,13 @@ svg {
     p0=[d3.event.x,d3.event.y]
     // theta0=Math.atan2(p0[1]-center[1], p0[0]-center[0])
     theta0=angle(p0[1]-center[1], p0[0]-center[0])
+    thetaMin = theta0
+
     // p0=[rotary.data()[0].x,rotary.data()[0].y]
     // console.log(`started at ${p0}`);
     // console.log(`started at ${rotary.data()[0].x}`);
     console.log(`started at ${d3.event.x}, ${d3.event.y}`);
-    console.log(`theta0 ${theta0*180/Math.PI}}`);
+    console.log(`theta0 ${theta0}}`);
   }
 
   function dragged(d) {
@@ -159,7 +161,7 @@ svg {
       rotary.attr("transform", `rotate(${thetaMin} ${center[0]} ${center[1]})`)
 
     }
-    // 
+    //
     //
     // dx=p1[0]-p0[0]
     // dy=p1[1]-p0[1]
