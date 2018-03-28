@@ -132,7 +132,7 @@ svg {
     .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)})
 
 
-  var p0=[], p1=[], theta0, thetaMin
+  var p0=[], p1=[], theta0, thetaMin, thetaOffset
 
   var angle = function (x,y) {
     return (-(Math.atan2(y,x)*180/Math.PI)+30+360)%360
@@ -161,7 +161,9 @@ svg {
     //ratchet the toary, only rotate it CW
     if (dtheta <0) {
       thetaMin = Math.min(thetaMin, theta1)
-      rotary.attr("transform", `rotate(${theta0-thetaMin} ${center[0]} ${center[1]})`)
+      thetaOffset  = theta0-thetaMin
+
+      rotary.attr("transform", `rotate(${thetaOffset} ${center[0]} ${center[1]})`)
 
     }
     //
@@ -171,6 +173,7 @@ svg {
     console.log(`theta1: ${theta1}` );
     console.log(`theta min: ${thetaMin}`);
     console.log(`dTheta: ${dtheta}`);
+    console.log(`thetaOffset: ${thetaOffset}`);
     // rotary.attr("transform", `rotate(${-dtheta*180/Math.PI} ${center[0]} ${center[1]})`)
   }
 
@@ -178,22 +181,33 @@ svg {
     d3.select(this).classed("active", false);
     console.log("ended");
 
+
     // rotary.transition()
     //   .duration(1000)
     //   .attr("transform", `rotate(0 ${center[0]} ${center[1]})`)
     //   .attr()
+    var start = performance.now()
+    // var offset= thetaOffset
+    var step = function(timestamp) {
+      console.log(thetaOffset);
+      var t = (timestamp-start)/1000
+      console.log(t);
+      start=timestamp
+      var thetaPerSecond = 90
+      console.log(thetaPerSecond*t);
 
-      // var step = function(timestamp) {
-      //   var t = timestamp/1000%1
-      //   var thetaPerSecond = Math.PI/2
-      //   // console.log(t);
-      //   // update(t)
-      //   var theta = thetaPerSecond * t
-      //   toary.attr("transform", `rotate(${theta} ${center[0]} ${center[1]})`)
-      //
-      //   window.requestAnimationFrame(step);
-      // }
-      // var snapback =   window.requestAnimationFrame(step);
+      // decrease the rotation from the drag, until it's back to 0
+      thetaOffset -= thetaPerSecond * t
+      thetaOffset = Math.max(0, thetaOffset)
+      console.log(thetaOffset);
+      rotary.attr("transform", `rotate(${thetaOffset} ${center[0]} ${center[1]})`)
+      if (thetaOffset >0) {
+        window.requestAnimationFrame(step);
+      } else {
+        window.cancelAnimationFrame(snapback)
+      }
+    }
+    var snapback =   window.requestAnimationFrame(step);
   }
 
 
