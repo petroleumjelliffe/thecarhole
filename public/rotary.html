@@ -1,0 +1,189 @@
+"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+.hello, .hole {
+  color:black;
+  stroke: black;
+  font-size: 16px
+}
+.frame {
+  fill: none;
+  stroke: #000;
+}
+text, .digit {
+  color:black;
+  fill:black;
+
+  text-anchor:middle;
+  alignment-baseline:middle;
+
+}
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+svg {
+  fill: #ccc;
+}
+
+</style>
+</head>
+<body id="body">
+  <svg width="600" height="400"></svg>
+
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+  //get the svg element
+  var svg = d3.select("svg"),
+      margin = {top: 20, right: 20, bottom: 30, left: 40},
+      width = +svg.attr("width") - margin.left - margin.right,
+      height = +svg.attr("height") - margin.top - margin.bottom;
+
+  //set the scales
+  // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+  var x = d3.scaleBand()
+    .range([0, width-margin.left-margin.right])
+    .padding(0.2)
+
+  var y = d3.scaleLinear()
+    .range([height-margin.top, 0])
+
+  var colors = d3.scaleLinear()
+    .domain([0,70,100]) //temps
+    .interpolate(d3.interpolateCubehelix)
+    .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,.5)]);
+
+  //create the parent element
+  var g = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
+  // .attr("transform", "rotate(" + 45+ ")")
+
+  var center =[150,150]
+  var r=100
+  var theta = Math.PI*2/12
+
+  var rotary = g.selectAll(".hole")
+    .data([1,2,3,4,5,6,7,8,9,0])
+    .enter().append("circle")
+    .attr("class","hole")
+    .attr("cx", function(d) {return center[0]+r*Math.cos(d*theta)})
+    .attr("cy", function(d) {return center[1]+r*Math.sin(d*theta)})
+    .attr("r", 20)
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+
+  var digits = g.selectAll(".digit")
+    .data([1,2,3,4,5,6,7,8,9,0])
+    .enter().append("text")
+    .text(function(d) { return d })
+    .attr("class","digit")
+    .attr("x", function(d) {return center[0]+r*Math.cos(d*theta)})
+    .attr("y", function(d) {return center[1]+r*Math.sin(d*theta)})
+
+
+
+  // rotary.append("circle")
+  //   // .attr("cx", function(d) {return d.x})
+  //   // .attr("cy", function(d) {return d.y})
+  //   // .attr("r", Math.min(width/3, height/3))
+  //   .attr("stroke", "black")
+  //   // .call(d3.drag()
+  //   //     .on("start", dragstarted)
+  //   //     .on("drag", dragged)
+  //   //     .on("end", dragended));
+  // rotary.append("text")
+  //     .text("1")
+  //     .attr("x", function(d){return d.x})
+  //     .attr("y", function(d){return d.y})
+  //     .attr("class", "hello")
+
+  // var svg2 = d3.selectAll("svg")
+  //         .call(d3.drag()
+  //         .container(document.getElementById("body"))
+  //         .on("start", dragstarted)
+  //         .on("drag", dragged)
+  //         .on("end", dragended));
+
+
+  var p0=[], p1=[], theta0
+
+  function dragstarted(d) {
+    d3.select(this).raise().classed("active", true);
+    p0=[d3.event.x,d3.event.y]
+    theta0=Math.atan2(p0[1]-center[1], p0[0]-center[0])
+    // p0=[rotary.data()[0].x,rotary.data()[0].y]
+    // console.log(`started at ${p0}`);
+    // console.log(`started at ${rotary.data()[0].x}`);
+    console.log(`started at ${d3.event.x}, ${d3.event.y}`);
+    console.log(`theta0 ${theta0*180/Math.PI}}`);
+  }
+
+  function dragged(d) {
+    // d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+    p1=[d3.event.x,d3.event.y]
+    theta1=Math.atan2(p1[1]-center[1], p1[0]-center[0])
+    dtheta = theta0-theta1
+    dx=p1[0]-p0[0]
+    dy=p1[1]-p0[1]
+
+    console.log(`${dtheta*180/Math.PI}`);
+    rotary.attr("transform", `rotate(${-dtheta*180/Math.PI} ${center[0]} ${center[1]})`)
+  }
+
+  function dragended(d) {
+    d3.select(this).classed("active", false);
+  }
+
+
+</script>
+</body>
+</html>
