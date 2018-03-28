@@ -81,7 +81,7 @@ svg {
 
   //get the svg element
   var svg = d3.select("svg"),
-      margin = {top: 20, right: 20, bottom: 30, left: 40},
+      margin = {top: 20, right: 20, bottom: 30, left: 0},
       width = +svg.attr("width") - margin.left - margin.right,
       height = +svg.attr("height") - margin.top - margin.bottom;
 
@@ -102,6 +102,8 @@ svg {
   //create the parent element
   var g = svg.append("g")
   .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
+  var g2 = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
   // .attr("transform", "rotate(" + 45+ ")")
 
   var center =[150,150]
@@ -121,7 +123,7 @@ svg {
         .on("end", dragended));
 
 
-  var digits = g.selectAll(".digit")
+  var digits = g2.selectAll(".digit")
     .data([1,2,3,4,5,6,7,8,9,0])
     .enter().append("text")
     .text(function(d) { return d })
@@ -133,40 +135,42 @@ svg {
   var p0=[], p1=[], theta0, thetaMin
 
   var angle = function (x,y) {
-    return ((Math.atan2(y,x)*180/Math.PI)+30+360)%360
+    return (-(Math.atan2(y,x)*180/Math.PI)+30+360)%360
   }
   function dragstarted(d) {
     d3.select(this).raise().classed("active", true);
     p0=[d3.event.x,d3.event.y]
     // theta0=Math.atan2(p0[1]-center[1], p0[0]-center[0])
-    theta0=angle(p0[1]-center[1], p0[0]-center[0])
+    theta0=angle( p0[0]-center[0], p0[1]-center[1])
     thetaMin = theta0
 
     // p0=[rotary.data()[0].x,rotary.data()[0].y]
     // console.log(`started at ${p0}`);
     // console.log(`started at ${rotary.data()[0].x}`);
-    console.log(`started at ${d3.event.x}, ${d3.event.y}`);
-    console.log(`theta0 ${theta0}}`);
+    console.log(`started at ${p0}`);
+    console.log(`theta0 ${theta0}`);
   }
 
   function dragged(d) {
     // d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
-    p1=[d3.event.x,d3.event.y]
-    theta1=angle(p1[1]-center[1], p1[0]-center[0])
+    p1=[d3.event.x, d3.event.y]
+    theta1=angle(p1[0]-center[0], p1[1]-center[1])
+    thetaPrev= angle(p1[0]-d3.event.dx-center[0], p1[1]-d3.event.dy-center[0])
     // dtheta = theta0-theta1
-    dtheta = angle(d3.event.x-d3.event.dx,d3.event.y-d3.event.dy)-theta1
+    dtheta = theta1-thetaPrev
     //ratchet the toary, only rotate it CW
     if (dtheta <0) {
       thetaMin = Math.min(thetaMin, theta1)
-      rotary.attr("transform", `rotate(${thetaMin} ${center[0]} ${center[1]})`)
+      rotary.attr("transform", `rotate(${theta0-thetaMin} ${center[0]} ${center[1]})`)
 
     }
     //
     //
     // dx=p1[0]-p0[0]
     // dy=p1[1]-p0[1]
-
-    console.log(`${dtheta}`);
+    console.log(`theta1: ${theta1}` );
+    console.log(`theta min: ${thetaMin}`);
+    console.log(`dTheta: ${dtheta}`);
     // rotary.attr("transform", `rotate(${-dtheta*180/Math.PI} ${center[0]} ${center[1]})`)
   }
 
