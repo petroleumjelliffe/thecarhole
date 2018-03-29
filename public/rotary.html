@@ -4,11 +4,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+body{
+  margin:0;
+  padding:0;
+}
 .number {
-
+  font-family: 'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;
 }
 .hello, .hole {
-  color:black;
+  fill:pink;
   stroke: black;
   font-size: 16px;
   opacity: .5;
@@ -72,7 +76,8 @@ text, .digit {
 }
 
 svg {
-  fill: #ccc;
+  margin:0;
+  background: #fdd;
 }
 
 </style>
@@ -89,7 +94,7 @@ svg {
 
   //get the svg element
   var svg = d3.select("svg"),
-      margin = {top: 20, right: 20, bottom: 30, left: 0},
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
       width = +svg.attr("width") - margin.left - margin.right,
       height = +svg.attr("height") - margin.top - margin.bottom;
   var number = d3.select("#number")
@@ -104,7 +109,7 @@ svg {
   .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
 
   var center =[width/2,height/2]
-  var r=100
+  var r=140
   var theta = Math.PI*2/12
   var labels = [
     {digit:1, letters:[]},
@@ -130,7 +135,7 @@ svg {
     .attr("class","hole")
     .attr("cx", function(d,i) {return center[0]+r*Math.cos(i*theta)})
     .attr("cy", function(d,i) {return center[1]+r*-Math.sin(i*theta)})
-    .attr("r", 20)
+    .attr("r", 30)
     .call(d3.drag()
         .on("start", dragstarted)
         .on("drag", dragged)
@@ -144,14 +149,14 @@ svg {
     .text(function(d) { return d.digit })
     .attr("class","digit")
     .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta)})
-    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)})
+    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)-10})
   var letters = g2.selectAll(".letters")
     .data(labels)
     .enter().append("text")
     .text(function(d) { return d.letters.join('') })
     .attr("class","digit")
     .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta)})
-    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)+20})
+    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)+10})
 
 
 
