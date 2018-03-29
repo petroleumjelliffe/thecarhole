@@ -1,15 +1,20 @@
-"<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+.number {
 
+}
 .hello, .hole {
   color:black;
   stroke: black;
-  font-size: 16px
+  font-size: 16px;
+  opacity: .5;
+}
+.base {
+  fill: pink
 }
 .frame {
   fill: none;
@@ -73,7 +78,10 @@ svg {
 </style>
 </head>
 <body id="body">
-  <svg width="600" height="400"></svg>
+  <form>
+  <input type="text" id="number" >
+</form>
+  <svg width="375" height="400"></svg>
 
 
 <script src="//d3js.org/d3.v4.min.js"></script>
@@ -84,34 +92,40 @@ svg {
       margin = {top: 20, right: 20, bottom: 30, left: 0},
       width = +svg.attr("width") - margin.left - margin.right,
       height = +svg.attr("height") - margin.top - margin.bottom;
+  var number = d3.select("#number")
 
-  //set the scales
-  // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
-  var x = d3.scaleBand()
-    .range([0, width-margin.left-margin.right])
-    .padding(0.2)
-
-  var y = d3.scaleLinear()
-    .range([height-margin.top, 0])
-
-  var colors = d3.scaleLinear()
-    .domain([0,70,100]) //temps
-    .interpolate(d3.interpolateCubehelix)
-    .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,.5)]);
+  var phonenumber=""
 
   //create the parent element
-  var g = svg.append("g")
-  .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
   var g2 = svg.append("g")
   .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
   // .attr("transform", "rotate(" + 45+ ")")
+  var g = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
 
-  var center =[150,150]
+  var center =[width/2,height/2]
   var r=100
   var theta = Math.PI*2/12
+  var labels = [
+    {digit:1, letters:[]},
+    {digit:2, letters:["A", "B", "C"]},
+    {digit:3, letters:["D", "E", "F"]},
+    {digit:4, letters:["G", "H", "I"]},
+    {digit:5, letters:["J", "K", "L"]},
+    {digit:6, letters:["M", "N", "O"]},
+    {digit:7, letters:["P", "R", "S"]},
+    {digit:8, letters:["T", "U", "V"]},
+    {digit:9, letters:["W", "X", "Y"]},
+    {digit:0, letters:["OPER"]}
+  ]
+  g2.append("circle")
+    .attr("class", "base")
+    .attr("r",r+30)
+    .attr("cx", center[0])
+    .attr("cy", center[1])
 
   var rotary = g.selectAll(".hole")
-    .data([1,2,3,4,5,6,7,8,9,0])
+    .data(labels)
     .enter().append("circle")
     .attr("class","hole")
     .attr("cx", function(d,i) {return center[0]+r*Math.cos(i*theta)})
@@ -123,13 +137,23 @@ svg {
         .on("end", dragended));
 
 
+
   var digits = g2.selectAll(".digit")
-    .data([1,2,3,4,5,6,7,8,9,0])
+    .data(labels)
     .enter().append("text")
-    .text(function(d) { return d })
+    .text(function(d) { return d.digit })
     .attr("class","digit")
     .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta)})
     .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)})
+  var letters = g2.selectAll(".letters")
+    .data(labels)
+    .enter().append("text")
+    .text(function(d) { return d.letters.join('') })
+    .attr("class","digit")
+    .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta)})
+    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)+20})
+
+
 
 
   var p0=[], p1=[], theta0, thetaMin, thetaOffset
@@ -181,7 +205,10 @@ svg {
     d3.select(this).classed("active", false);
     console.log("ended");
 
-
+    if (thetaMin < 6) {
+      phonenumber=`${phonenumber}${d.digit}`
+      number.property("value", phonenumber)
+    }
     // rotary.transition()
     //   .duration(1000)
     //   .attr("transform", `rotate(0 ${center[0]} ${center[1]})`)
@@ -193,7 +220,7 @@ svg {
       var t = (timestamp-start)/1000
       console.log(t);
       start=timestamp
-      var thetaPerSecond = 90
+      var thetaPerSecond = 180
       console.log(thetaPerSecond*t);
 
       // decrease the rotation from the drag, until it's back to 0
