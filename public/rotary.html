@@ -14,6 +14,7 @@ body{
   height: 100%;
   overflow: auto;
 
+
 }
 .number {
   font-family: 'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;
@@ -195,6 +196,7 @@ svg {
     // dtheta = theta0-theta1
     dtheta = theta1-thetaPrev
     //ratchet the toary, only rotate it CW
+
     if (dtheta <=0) {
       thetaMin = Math.min(thetaMin, theta1)
       thetaOffset  = theta0-thetaMin
