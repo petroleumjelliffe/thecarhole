@@ -1,0 +1,151 @@
+"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+.frame {
+  fill: none;
+  stroke: #000;
+}
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+svg {
+  fill: #ccc;
+}
+
+</style>
+</head>
+<body>
+  <svg width="400" height="250"></svg>
+
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+  //get the svg element
+  var svg = d3.select("svg"),
+      margin = {top: 20, right: 20, bottom: 30, left: 40},
+      width = +svg.attr("width") - margin.left - margin.right,
+      height = +svg.attr("height") - margin.top - margin.bottom;
+
+  //set the scales
+  // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+  var x = d3.scaleBand()
+    .range([0, width-margin.left-margin.right])
+    .padding(0.2)
+
+  var y = d3.scaleLinear()
+    .range([height-margin.top, 0])
+
+  var colors = d3.scaleLinear()
+    .domain([0,70,100]) //temps
+    .interpolate(d3.interpolateCubehelix)
+    .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,.5)]);
+
+  //create the parent element
+  var g = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  //set the axes
+  var gx = g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+
+  var gy = g.append("g")
+      .attr("class", "axis axis--y")
+
+
+  var update = function() {
+    //get the data and update the graph
+    d3.json(url, function(data) {
+      // console.log(data);
+
+      //set the domain to match the data
+      x.domain([])
+      y.domain([])
+
+      gx.call(d3.axisBottom(x)
+        .ticks(7)
+        .tickFormat(d3.timeFormat("%a")))
+
+      gy.call(yAxis)
+
+      //** SELECT, ENTER, UPDATE, EXIT **
+      //select existing bars, if any
+      var select = g.selectAll(".g")
+        .data(data)//, function(d) {console.log(d); return d})
+
+      //new items
+      var enter =  select.enter().append("g")
+        .attr("class", "g")
+
+      //add the elements, and set static properties
+      enter.append("rect")
+        .attr("class", "class2")
+
+      //update the existing and new elements
+      var update = select.merge(enter)
+
+      //update properties for new and existing items
+      update.attr("transform", function(d) { return `translate(${x(new Date(d.time*1000))} ,0)`; })
+
+      update.select(".class2")
+        .attr("y", function(d) { return y(d.temperatureMax); })
+        .attr("width", x.bandwidth())
+        .attr("height", function(d) { return  y(d.temperatureMin)-y(d.temperatureMax) })
+
+      //remove old ones
+      var exit = select.exit()
+      exit.remove()
+    })
+  }
+
+  update()
+
+</script>
+</body>
+</html>

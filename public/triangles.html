@@ -1,0 +1,176 @@
+"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+.frame {
+  fill: none;
+  stroke: #000;
+}
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+.circle {
+  stroke: black;
+  stroke-width: .5px;
+}
+
+svg {
+  fill: #ccc;
+}
+
+</style>
+</head>
+<body>
+  <svg width="800" height="500"></svg>
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+  //get the svg element
+  var svg = d3.select("svg"),
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = +svg.attr("width") - margin.left - margin.right,
+      height = +svg.attr("height") - margin.top - margin.bottom;
+
+  var rowMax = 4
+
+  //set the scales
+  // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+  var x = d3.scaleLinear()
+    .domain([0,3])
+    .range([0, (width-margin.left-margin.right)/2]);
+
+  var y = d3.scaleLinear()
+    .domain([0,rowMax])
+    .range([(height-margin.top)/2, 0]);
+
+  var r = d3.scaleLinear()
+    .domain(x.range())
+    .range([0,30]);
+
+  //fade out circles between x=2 and 3
+  var fade = d3.interpolate(3,2)
+
+  //create the parent element
+  var g = svg.append("g");
+      // .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  var gcircles = [], grows=[]
+  for (var row=0; row<rowMax; row++) {
+    var i = g.append("g")
+    var arr = []
+    for (var col = 0; col<3; col++) {
+      arr.push(i.append("g"))
+    }
+    gcircles[row]=i
+    grows[row]=arr
+  }
+
+  //set the axes
+  var gx = g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+
+  var gy = g.append("g")
+      .attr("class", "axis axis--y");
+
+  var step = function(timestamp) {
+    var t = timestamp/1000%1
+    // console.log(t);
+    update(t)
+    window.requestAnimationFrame(step);
+  }
+  window.requestAnimationFrame(step);
+
+  svg.on("mousemove", function() {
+    console.log(d3.mouse(this))
+    update(d3.mouse(this)[0]/width)
+  })
+  // gx.call(d3.axisBottom(x)
+  //   .ticks(7)
+  //   .tickFormat(d3.timeFormat("%a")))
+  //
+  // gy.call(yAxis)
+
+var data = [[0,0],[1,0],[2,0]]
+
+var update = function(t) {
+  for (var row=0; row<rowMax; row++) {
+    grows[row].map(function(d,i,arr) {
+      // var n= arr.length
+      gcircles[row].attr("transform", function(d) { return `translate(${row%2*x(-3)/2}, ${y((row)*Math.sqrt(3))})`; })
+      d.attr("transform", function(d) { return `translate(${x(i*3)}, 0)`; })
+
+      //** SELECT, ENTER, UPDATE, EXIT **
+      //select existing bars, if any
+      var select = d.selectAll(".circle")
+        .data(data)//, function(d) {console.log(d); return d})
+
+      //new items
+      var enter =  select.enter().append("circle")
+        .attr("class", "circle")
+
+      //update the existing and new elements
+      var update = select.merge(enter)
+
+      update
+        .attr("cx", function(d) { return x((d[0]+t+d[1]%2*.5)); })
+        .attr("cy", function(d) { return y(d[1]+1*Math.sqrt(3)); })
+        .attr("r",  function(d) { return r(x(d[0]+t)); })
+        .attr("opacity", function(d) {return fade(d[0]+t)})
+
+      //remove old ones
+      var exit = select.exit()
+      exit.remove()
+    })
+  }
+}
+
+
+</script>
+</body>
+</html>
