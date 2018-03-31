@@ -17,7 +17,7 @@ body {
   font-family: 'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;
 }
 .number {
-  font-size:2em;
+  font-size:1.4em;
   font-weight: bold;
 }
 .hello, .hole {
@@ -106,6 +106,11 @@ svg {
 
 }
 .ufo-building-float:active {
+  /* animation: ufo-building-float .25s ease-in ; */
+  transform: translateY(25px) scaleY(.75);
+
+}
+.ufo-building-float:focus {
   /* animation: ufo-building-float .25s ease-in ; */
   transform: translateY(25px) scaleY(.75);
 
@@ -271,7 +276,13 @@ console.log(center);
 
     if (thetaMin < 6) {
       phonenumber=`${phonenumber}${d.digit}`
-      number.text(phonenumber)
+
+      var x = phonenumber.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+  // e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
+  // number.text(phonenumber)
+  number.text(!x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : ''))
+
+
     }
     // rotary.transition()
     //   .duration(1000)
