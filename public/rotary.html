@@ -14,7 +14,7 @@ body {
   padding:0;
 }
 .number, .digit, .letters {
-  font-family: 'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;
+  font-family: Futura, 'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;
 }
 .number {
   font-size:1.4em;
@@ -197,8 +197,8 @@ console.log(center);
     .data(labels)
     .enter().append("circle")
     .attr("class","hole")
-    .attr("cx", function(d,i) {return center[0]+r*Math.cos(i*theta)})
-    .attr("cy", function(d,i) {return center[1]+r*-Math.sin(i*theta)})
+    .attr("cx", function(d,i) {return center[0]+r*Math.cos(i*theta+Math.PI/4)})
+    .attr("cy", function(d,i) {return center[1]+r*-Math.sin(i*theta+Math.PI/4)})
     .attr("r", 30)
     .call(d3.drag()
         .on("start", dragstarted)
@@ -212,15 +212,15 @@ console.log(center);
     .enter().append("text")
     .text(function(d) { return d.digit })
     .attr("class","digit")
-    .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta)})
-    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)+10})
+    .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta+Math.PI/4)})
+    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta+Math.PI/4)+10})
   var letters = g2.selectAll(".letters")
     .data(labels)
     .enter().append("text")
     .text(function(d) { return d.letters.join('') })
     .attr("class","digit")
-    .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta)})
-    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta)-10})
+    .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta+Math.PI/4)})
+    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta+Math.PI/4)-10})
 
 
 
