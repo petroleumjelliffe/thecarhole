@@ -1,4 +1,4 @@
-"<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -80,11 +80,12 @@ svg {
 
 
   var y = d3.scaleLinear()
-    .range([height-margin.top, 0])
+    .range([height, 0])
+    .domain([0, 6])
 
   var ripple = d3.line()
     .x(function(d) {return x(d.time)})
-    .y(function(d) {return y(d.amplitude*1/(d.time-d.t0+1))})
+    .y(function(d) {return y(d.amplitude*1/(new Date.now()-d.time+1))})
 
 
 
@@ -99,58 +100,101 @@ svg {
 
   var gy = g.append("g")
       .attr("class", "axis axis--y")
+var e =6
 
+var Oscillator = function(spec) {
+  spec.start=spec.start|| Date.now()
+  spec.freq = spec.freq||20
+
+  var amp =   function(t) {
+      return Math.sin((t-spec.start)/1000*spec.freq*2*Math.PI)
+  }
+
+  var that={}
+  that.reset = function() {
+    spec.start = Date.now()
+  }
+  that.setFreq = function(freq) {
+    spec.freq=freq
+  }
+  that.getAmp = function() {
+    var now = Date.now()
+    return amp(now)
+  }
+  that.getPoint= function() {
+    var now = Date.now()
+
+    return {
+      time: now,
+      amplitude: amp(now)
+    }
+  }
+
+  return that
+}
+var spring = new Oscillator({})
+
+var sample= function(array, e) {
+  console.log(array);
+  var now = new Date()
+  array.push(spring.getPoint())
+}
+
+var data=[]
 
   var update = function() {
     //get the data and update the graph
       // console.log(data);
-      var now = new Date.now()
+      var now = new Date()
       //set the domain to match the data
       x.domain([now, now.getSeconds()-5*1000])
-      // y.domain([])
+      y.domain([0,6])
 
-      data.push({
-        time: now,
-        amplitude()
-      })
 
       gx.call(d3.axisBottom(x)
         .ticks(7)
         .tickFormat(d3.timeFormat("%a")))
 
-      gy.call(yAxis)
+      // gy.call(yAxis)
 
       //** SELECT, ENTER, UPDATE, EXIT **
       //select existing bars, if any
-      var select = g.selectAll(".g")
-        .data(data)//, function(d) {console.log(d); return d})
+      var select = g.selectAll(".line")
+        .data([data])//, function(d) {console.log(d); return d})
 
       //new items
-      var enter =  select.enter().append("g")
-        .attr("class", "g")
+      var enter =  select.enter().append("path")
+        .attr("class", "line")
 
-      //add the elements, and set static properties
-      enter.append("rect")
-        .attr("class", "class2")
 
       //update the existing and new elements
       var update = select.merge(enter)
 
       //update properties for new and existing items
-      update.attr("transform", function(d) { return `translate(${x(new Date(d.time*1000))} ,0)`; })
+      update
+        .attr("d", ripple)
 
-      update.select(".class2")
-        .attr("y", function(d) { return y(d.temperatureMax); })
-        .attr("width", x.bandwidth())
-        .attr("height", function(d) { return  y(d.temperatureMin)-y(d.temperatureMax) })
 
       //remove old ones
       var exit = select.exit()
       exit.remove()
   }
 
-  update()
+  // update()
+  var step = function(timestamp) {
+    if (e>0) {
+      console.log(e);
+      sample(data, e)
+      e-=.1
+      update()
+      window.requestAnimationFrame(step);
 
+    }
+
+    // window.cancelAnimationFrame(snapback)
+
+  }
+  var snapback =   window.requestAnimationFrame(step);
 </script>
 </body>
 </html>
