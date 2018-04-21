@@ -1,0 +1,313 @@
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+html, body {
+  position: fixed;
+  overflow: hidden;
+}
+
+body {
+  margin:0;
+  padding:0;
+}
+.number, .digit, .letters {
+  font-family: Futura, 'Courier New', Courier, 'Lucida Sans Typewriter', 'Lucida Typewriter', monospace;
+}
+.number {
+  font-size:1.4em;
+  font-weight: bold;
+}
+.hello, .hole {
+  fill:pink;
+  stroke: black;
+  font-size: 16px;
+  opacity: .5;
+
+}
+.base {
+  fill: pink
+}
+.num {
+  fill:#fee;
+}
+.frame {
+  fill: none;
+  stroke: #000;
+}
+text, .digit, .number {
+  color:black;
+  fill:black;
+
+  text-anchor:middle;
+  alignment-baseline:middle;
+
+}
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+svg {
+  margin:0;
+  background: #fdd;
+}
+
+@keyframes ufo-building-float {
+  0%   {transform: translateY(0)}
+  100% {transform: translateY(25px)}
+}
+
+.ufo-building-float {
+  transition:  .125s ease-in ;
+  fill: white;
+  opacity:.7;
+  transform: scaleY(.75);
+
+}
+.ufo-building-float:active {
+  /* animation: ufo-building-float .25s ease-in ; */
+  transform: translateY(25px) scaleY(.75);
+
+}
+.ufo-building-float:focus {
+  /* animation: ufo-building-float .25s ease-in ; */
+  transform: translateY(25px) scaleY(.75);
+
+}
+
+</style>
+</head>
+<body id="body">
+
+  <svg width="375" height="600"></svg>
+
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+  //get the svg element
+  var svg = d3.select("svg"),
+      margin = {top: 0, right: 0, bottom: 0, left: 0},
+      width = +svg.attr("width") - margin.left - margin.right,
+      height = +svg.attr("height") - margin.top - margin.bottom;
+
+  var phonenumber=""
+
+  //create the parent element
+  var g3 = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
+  .attr("class","ufo-building-float")
+  var g2 = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
+  // .attr("transform", "rotate(" + 45+ ")")
+  var g = svg.append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ") ")
+
+  // var center =[187, 200]
+  // console.log(`${center}`);
+  var center =[width/2, height/2+30]
+console.log(center);
+  var r=140
+  var theta = Math.PI*2/12
+  var labels = [
+    {digit:1, letters:[]},
+    {digit:2, letters:["A", "B", "C"]},
+    {digit:3, letters:["D", "E", "F"]},
+    {digit:4, letters:["G", "H", "I"]},
+    {digit:5, letters:["J", "K", "L"]},
+    {digit:6, letters:["M", "N", "O"]},
+    {digit:7, letters:["P", "R", "S"]},
+    {digit:8, letters:["T", "U", "V"]},
+    {digit:9, letters:["W", "X", "Y"]},
+    {digit:0, letters:["OPER"]}
+  ]
+  g3.append("circle")
+    // .attr("class", "ufo-building-float")
+    .attr("r", 20)
+    .attr("cx", width-50)
+    .attr("cy", 70)
+
+    g3.append("circle")
+      // .attr("class", "ufo-building-float")
+      .attr("r", 20)
+      .attr("cx", 50)
+      .attr("cy", 70)
+
+  g2.append("circle")
+    .attr("class", "base")
+    .attr("r",r+40)
+    .attr("cx", center[0])
+    .attr("cy", center[1])
+
+    g2.append("circle")
+        .attr("class", "num")
+        .attr("r",r-40)
+        .attr("cx", center[0])
+        .attr("cy", center[1])
+
+  var number = g2.append("text")
+    .data([phonenumber])
+    .attr("x", center[0])
+    .attr("y", center[1])
+    .attr("class", "number")
+
+
+  var rotary = g.selectAll(".hole")
+    .data(labels)
+    .enter().append("circle")
+    .attr("class","hole")
+    .attr("cx", function(d,i) {return center[0]+r*Math.cos(i*theta+Math.PI/4)})
+    .attr("cy", function(d,i) {return center[1]+r*-Math.sin(i*theta+Math.PI/4)})
+    .attr("r", 30)
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+
+
+  var digits = g2.selectAll(".digit")
+    .data(labels)
+    .enter().append("text")
+    .text(function(d) { return d.digit })
+    .attr("class","digit")
+    .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta+Math.PI/4)})
+    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta+Math.PI/4)+10})
+  var letters = g2.selectAll(".letters")
+    .data(labels)
+    .enter().append("text")
+    .text(function(d) { return d.letters.join('') })
+    .attr("class","digit")
+    .attr("x", function(d,i) {return center[0]+r*Math.cos(i*theta+Math.PI/4)})
+    .attr("y", function(d,i) {return center[1]+r*-Math.sin(i*theta+Math.PI/4)-10})
+
+
+
+
+  var p0=[], p1=[], theta0, thetaMin, thetaOffset
+
+  var angle = function (x,y) {
+    return (-(Math.atan2(y,x)*180/Math.PI)+30+360)%360
+  }
+  function dragstarted(d) {
+    d3.select(this).raise().classed("active", true);
+    p0=[d3.event.x,d3.event.y]
+    // theta0=Math.atan2(p0[1]-center[1], p0[0]-center[0])
+    theta0=angle( p0[0]-center[0], p0[1]-center[1])
+    thetaMin = theta0
+
+    // p0=[rotary.data()[0].x,rotary.data()[0].y]
+    // console.log(`started at ${p0}`);
+    // console.log(`started at ${rotary.data()[0].x}`);
+    console.log(`started at ${p0}`);
+    console.log(`theta0 ${theta0}`);
+  }
+
+  function dragged(d) {
+    // d3.select(this).attr("cx", d.x = d3.event.x).attr("cy", d.y = d3.event.y);
+    p1=[d3.event.x, d3.event.y]
+    theta1=angle(p1[0]-center[0], p1[1]-center[1])
+    thetaPrev= angle(p1[0]-d3.event.dx-center[0], p1[1]-d3.event.dy-center[1])
+    // dtheta = theta0-theta1
+    dtheta = theta1-thetaPrev
+    //ratchet the toary, only rotate it CW
+    if (dtheta <0) {
+      thetaMin = Math.min(thetaMin, theta1)
+      thetaOffset  = theta0-thetaMin
+
+      rotary.attr("transform", `rotate(${thetaOffset} ${center[0]} ${center[1]})`)
+
+    }
+    //
+    //
+    // dx=p1[0]-p0[0]
+    // dy=p1[1]-p0[1]
+    console.log(`theta1: ${theta1}` );
+    console.log(`theta min: ${thetaMin}`);
+    console.log(`dTheta: ${dtheta}`);
+    console.log(`thetaOffset: ${thetaOffset}`);
+    // rotary.attr("transform", `rotate(${-dtheta*180/Math.PI} ${center[0]} ${center[1]})`)
+  }
+
+  function dragended(d) {
+    d3.select(this).classed("active", false);
+    console.log("ended");
+
+    if (thetaMin < 6) {
+      phonenumber = `${phonenumber}${d.digit}`
+      var x = phonenumber.replace(/\D/g, '').match(/(\d{0,3})(\d{0,3})(\d{0,4})/);
+      number.text(!x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : ''))
+    }
+    // rotary.transition()
+    //   .duration(1000)
+    //   .attr("transform", `rotate(0 ${center[0]} ${center[1]})`)
+    //   .attr()
+    var start = performance.now()
+    // var offset= thetaOffset
+    var step = function(timestamp) {
+      console.log(thetaOffset);
+      var t = (timestamp-start)/1000
+      console.log(t);
+      start=timestamp
+      var thetaPerSecond = 180
+      console.log(thetaPerSecond*t);
+
+      // decrease the rotation from the drag, until it's back to 0
+      thetaOffset -= thetaPerSecond * t
+      thetaOffset = Math.max(0, thetaOffset)
+      console.log(thetaOffset);
+      rotary.attr("transform", `rotate(${thetaOffset} ${center[0]} ${center[1]})`)
+      if (thetaOffset >0) {
+        window.requestAnimationFrame(step);
+      } else {
+        window.cancelAnimationFrame(snapback)
+      }
+    }
+    var snapback =   window.requestAnimationFrame(step);
+  }
+
+
+</script>
+</body>
+</html>
