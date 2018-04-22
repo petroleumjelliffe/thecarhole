@@ -62,7 +62,11 @@ svg {
   <svg width="1000" height="250">
     <defs>
       <!-- from https://bl.ocks.org/mbostock/10685278 -->
+      <path id="h-segment" d="M0,0 L4,-4 L32,-4 L36,0 L32,4 L4,4 L0,0z"/>
+      <path id="v-segment" d="M0,0 L4,4 L4,32 L0,36 L-4,32 L-4,4 L0,0z"/>
+
       <path id="segmentA" d="M10,8L14,4L42,4L46,8L42,12L14,12L10,8z"/>
+      <!-- <use xlink:href="h-segment" id="segmentA" x=2 y=10 ></use> -->
       <path id="segmentF" d="M8,10L12,14L12,42L8,46L4,42L4,14L8,10z"/>
       <path id="segmentB" d="M48,10L52,14L52,42L48,46L44,42L44,14L48,10z"/>
       <path id="segmentG" d="M10,48L14,44L42,44L46,48L42,52L14,52L10,48z"/>
@@ -70,6 +74,14 @@ svg {
       <path id="segmentC" d="M48,50L52,54L52,82L48,86L44,82L44,54L48,50z"/>
       <path id="segmentD" d="M10,88L14,84L42,84L46,88L42,92L14,92L10,88z"/>
     </defs>
+    <!-- <use xlink:href="#h-segment" x=2 y=10></use>
+    <use xlink:href="#segmentA" x=20 y=100></use>
+    <use xlink:href="#v-segment" x=40 y=12></use>
+    <use xlink:href="#v-segment" x=40 y=52></use>
+    <use xlink:href="#h-segment" x=2 y=90></use>
+    <use xlink:href="#v-segment" x=0 y=52></use>
+    <use xlink:href="#v-segment" x=0 y=12></use>
+    <use xlink:href="#h-segment" x=2 y=50></use> -->
   </svg>
 
 
@@ -80,31 +92,11 @@ svg {
   var svg = d3.select("svg"),
       margin = {top: 20, right: 20, bottom: 30, left: 40},
       width = +svg.attr("width") - margin.left - margin.right,
-      height = +svg.attr("height") - margin.top - margin.bottom;
-
-  //set the scales
-  // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
-  var x = d3.scaleBand()
-    .range([0, width-margin.left-margin.right])
-    .padding(0.2)
-
-  var y = d3.scaleLinear()
-    .range([height-margin.top, 0])
-
+      height = +svg.attr("height") - margin.top - margin.bottom
 
   //create the parent element
   var g = svg.append("g")
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-  //set the axes
-  // var gx = g.append("g")
-  //     .attr("class", "axis axis--x")
-  //     // .attr("transform", "translate(0," + height + ")")
-  //
-  // var gy = g.append("g")
-  //     .attr("class", "axis axis--y")
-
-
 
   var update = function(time) {
     //time is a string HH:MM
@@ -126,28 +118,32 @@ svg {
       [1,1,1,1,0,1,1]  //9
     ]
     var segments = ["F","A","B","G","E","D","C"]
-
+    var offset=[0,0]
       //starting positions for digital elements
       var timeDigits= []
 
       for (var i = 0; i<str.length; i++) {
         timeDigits[i]=digits[str.charAt(i)]
       }
-      var drag = d3.drag()
-          .subject(function(d) { return {x: d[0], y: d[1]}; })
-          .on("drag", dragged);
-
-
-      function dragstarted(d) {
-        p0=[d3.event.x,d3.event.y]
+      var dragstarted = function(d) {
+        offset=[d3.event.x-this.x.baseVal.value,d3.event.y-this.y.baseVal.value]
       }
-      function dragged(d) {
-        d3.select(this).attr("transform", `translate(${d3.event.x-p0[0]}, ${d3.event.y-p0[1]} )`);
-        // console.log(`${d3.event.x}, ${d3.event.y}`);
-        d.x=d3.event.x
-        console.log(d);
+      var dragged = function(d) {
+        var segment = d3.select(this)
+        //   .transition()
+        //   .delay(2000)
+          .attr("x",d3.event.x-offset[0])
+          .attr("y",d3.event.y-offset[1])
+        // console.log(this.x.baseVal.value);
+        // console.log(d);
       }
-
+      var dragended = function(d) {
+        // var segment = d3.select(this)
+        //   .transition()
+        //   .delay(500)
+        //   .attr("x",d3.event.x-offset[0])
+        //   .attr("y",d3.event.y-offset[1])
+      }
 
       //** SELECT, ENTER, UPDATE, EXIT **
       //select existing bars, if any
@@ -167,11 +163,13 @@ svg {
       var enter =  select.enter().append("use")
         .attr("class", "segment")
         .attr("xlink:href",function(d,i) {return `#segment${segments[i]}`})
+        // .attr("x", function(d) {return Math.random()*450+50})
+        // .attr("y", function(d) {return Math.random()*150})
         // .call(drag)
         .call(d3.drag()
             .on("start", dragstarted)
-            .on("drag", dragged))
-            // .on("end", dragended));
+            .on("drag", dragged)
+            .on("end", dragended));
 
 
       //update the existing and new elements
@@ -189,13 +187,30 @@ svg {
   // update("12:09")
 
   var step = function(timestamp) {
-
     var now = new Date()
-    var time= now.toTimeString().split(" ")[0]
+    var time = now.toTimeString().split(" ")[0]
     update(time)
     window.requestAnimationFrame(step);
-}
-var animate = window.requestAnimationFrame(step);
+  }
+  var animate = window.requestAnimationFrame(step);
+
+
+  function scatter() {
+    var select = d3.selectAll(".segment")
+      .transition()
+      .delay(0)
+      .attr("x", function(d) {return Math.random()*450})
+      .attr("y", function(d) {return Math.random()*150})
+
+  }
+  function fix() {
+    var select = d3.selectAll(".segment")
+      .transition()
+      .delay(0)
+      .attr("x", 0)
+      .attr("y", 0)
+
+  }
 
 
 
