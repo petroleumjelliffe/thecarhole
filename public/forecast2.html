@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+  .minuteHand{
+    stroke:#000;
+    stroke-width:2px;
+  }
+    .hourHand{
+    stroke:#000;
+    stroke-width:4px;
+    stroke-linecap:round;
+  }
+  .background{fill:#0cf}
+.temp {
+  fill:none;
+  stroke:#666;
+  stroke-dasharray: 1,4;
+  }
+  .minute {
+    fill:#fff;
+    stroke:none;
+  }
+  .hour {
+    fill:none;
+    stroke: #000;
+  }
+  
+
+  
+.frame {
+  fill: none;
+  stroke: #000;
+}
+  .rticks, .jticks {
+    stroke: #ccc;
+    stroke-width: 1;
+  }
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+/* svg {
+  fill: #ccc;
+} */
+
+</style>
+</head>
+<body>
+  <svg width="450" height="450"></svg>
+    <p id="output">
+
+    </p>
+
+  <form method="get" id="coords" >
+    <input type="button" value="locate" onclick="geoFindMe()">
+    <input type="text" name="lat" id="lat">
+    <input type="text" name="lon" id="lon">
+    <input type="button" value="GO" onclick="update()">
+
+  </form>
+  <!-- <button onclick="update()">GO</button> -->
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+    //get the svg element
+    var svg = d3.select("svg"),
+        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
+
+  
+    var defs = svg.append("defs");
+    var gradient = defs.append("linearGradient")
+       .attr("id", "svgGradient")
+       .attr("x1", "0%")
+       .attr("x2", "0%")
+       .attr("y1", "0%")
+       .attr("y2", "100%")
+       .attr("gradientUnits","userSpaceOnUse")
+
+     //set the color gradient
+     var gradhigh = gradient.append("stop")
+        .attr('class', 'start')
+        .attr("offset", "0%")
+        // .attr("stop-color", colors(tempMax))
+        .attr("stop-opacity", 1);
+
+     var gradlow =  gradient.append("stop")
+        .attr('class', 'end')
+        .attr("offset", "100%")
+        // .attr("stop-color", colors(tempMin))
+        .attr("stop-opacity", 1);
+
+
+
+    //set the scales
+    // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+//     var x2 = d3.scaleBand()
+//       .range([0, width-margin.left-margin.right])
+//       .padding(0.2)
+
+//     var y = d3.scaleLinear()
+//       .range([height-margin.top, 0])
+    var r0Precip=150, 
+        rMaxPrecip = 140,
+        rLowTemp = 75,
+        rHighTemp = 100
+    
+    
+    
+    var thetaMinute = d3.scaleLinear()
+      .domain([0,60])
+      .range([0,2*Math.PI])
+    
+    var thetaDay = d3.scaleLinear()
+      .domain([0,24])
+      .range([0,8*Math.PI/2])
+    
+    var rTempRange = d3.scaleLinear()
+      .range([rLowTemp, rHighTemp])
+    
+    var rPrecipIntensity = d3.scaleLinear()
+      .range([rMaxPrecip ,r0Precip])
+      .domain([.1,0])
+    
+    //precipitation
+    var minutelyTrend = d3.radialLine()
+      .angle(function(d) {
+        var time = new Date(d.time*1000)
+        console.log(time)
+        console.log(time.getMinutes())
+        return thetaMinute(time.getMinutes())
+      })
+      // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
+      .radius(function(d) {return rPrecipIntensity(d.precipIntensity)})
+      .curve(d3.curveCatmullRom)
+
+    //temperature by the hour
+    var hourlyTrend = d3.radialLine()
+      .angle(function(d) {
+        var time = new Date(d.time*1000)
+        console.log(time.getHours())
+
+        return thetaDay(time.getHours())
+      })
+      // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
+      .radius(function(d) {return rTempRange(d.temperature)})
+      // .curve(d3.curveCatmullRom)
+
+    
+
+    var colors = d3.scaleLinear()
+      .domain([0,70,100]) //temps
+      .interpolate(d3.interpolateCubehelix)
+      .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,.5)]);
+
+    //CREATE THE DOM
+    var g = svg.append("g")
+        .attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+  
+    g.append("circle")
+      .attr("class","background")
+      .attr("r",149)
+
+    //set the axes
+    var gr = g.append("g")
+        .attr("class", "axis axis--r")
+        // .attr("transform", "translate(0," + height + ")")
+
+    var gPrecip = g.append("g")
+        .attr("class", "axis axis--y")
+    
+    var gHands = g.append("g")
+        .attr("class", "hands")
+    
+    gHands.append("line")
+      .attr("class","minuteHand")
+            .attr("x1",0)
+          .attr("y1",0)
+
+
+    gHands.append("line")
+      .attr("class","hourHand")
+            .attr("x1",0)
+          .attr("y1",0)
+
+
+    var mTicks = d3.scaleLinear().domain([0,60])
+
+    var minorTicks = gPrecip.selectAll(".rticks")
+      .data(mTicks.ticks(60))
+      .enter().append("line")
+      .attr("class","rticks")
+      .attr("x1",function(d) { return 145*Math.cos(d*2*Math.PI/60 )})
+      .attr("x2",function(d) { return 150*Math.cos(d*2*Math.PI/60 )})
+      .attr("y1",function(d) { return 145*Math.sin(d*2*Math.PI/60 )})
+      .attr("y2",function(d) { return 150*Math.sin(d*2*Math.PI/60 )})
+
+    var majorTicks = gPrecip.selectAll(".jticks")
+      .data(mTicks.ticks(12))
+      .enter().append("line")
+      .attr("class","jticks")
+      .attr("x1",function(d) { return 140*Math.cos(d*2*Math.PI/60 )})
+      .attr("x2",function(d) { return 150*Math.cos(d*2*Math.PI/60 )})
+      .attr("y1",function(d) { return 140*Math.sin(d*2*Math.PI/60 )})
+      .attr("y2",function(d) { return 150*Math.sin(d*2*Math.PI/60 )})
+    
+    var majorTicks = gPrecip.selectAll(".labelMinutes")
+      .data(mTicks.ticks(12).slice(0,12))
+      .enter().append("text")
+      .attr("class","labelMinutes")
+      .attr("x",function(d) { return 165*Math.cos(d*2*Math.PI/60 -Math.PI/2)})
+      .attr("y",function(d) { return 165*Math.sin(d*2*Math.PI/60 -Math.PI/2 )})
+      .attr("text-anchor","middle")
+      .attr("alignment-baseline","central")
+      .text(function(d){return d})
+
+
+      
+  var update = function() {
+    //call the weather api at the specified location
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var url = "/weather"+
+      "?lat="+fieldLat.value+
+      "&lon="+fieldLon.value
+
+    //get the data and update the graph
+    d3.json(url, function(data) {
+      // console.log(data);
+
+      var minutely = data.minutely.data//.slice(0,5)
+      console.log(data.minutely)
+
+      var hourly = data.hourly.data.slice(0,13)
+      console.log(hourly)
+
+      //round the temps
+      var daily = data.daily.data
+        .map(function(d) {
+          d.temperatureMax = Math.round(d.temperatureMax)
+          d.temperatureMin = Math.round(d.temperatureMin)
+          return d
+        })
+      console.log(daily);
+
+      var currentTemp = Math.round(data.currently.temperature)
+      // var tempMax = d3.max(daily.map(function(d) {return (d.temperatureMax)}))
+      // var tempMin = d3.min(daily.map(function(d) {return (d.temperatureMin)}))
+      var tempMax = d3.max(hourly.map(function(d) {return (d.temperature)}))
+      var tempMin = d3.min(hourly.map(function(d) {return (d.temperature)}))
+
+      // x2.domain(daily.map(function(d) {return new Date(d.time*1000)}))
+      // y.domain([tempMin, tempMax])
+      rTempRange.domain([tempMin, tempMax])
+     
+      var rTicks = []
+      rTicks.push(tempMax)
+      rTicks.push(currentTemp)
+      rTicks.push(tempMin)
+
+      var minTemp = g.selectAll(".temp")
+        .data(rTicks)
+        .enter().append("circle")
+        .attr("class","temp")
+        .attr("r", function(d) {return rTempRange(d)})
+      
+ 
+      var precip = gr.selectAll(".minute")
+        .data([minutely])
+      
+      var enterPrecip = precip.enter()
+        .append("path")
+        .attr("class","minute")
+      
+      var updatePrecip = precip.merge(enterPrecip)
+        // .attr("d", function(d) {return minutelyTrend([minutely])+minutelyTrend([{time:0,precipIntensity:0},{time:100000,precipIntensity:0},{time:20000,precipIntensity:0},{time:0,precipIntensity:0}])})
+        .attr("d", minutelyTrend)
+        // .attr("stroke","black")
+
+      var temp = gr.selectAll(".hour")
+        .data([hourly])
+      
+      var enterTemp = temp.enter()
+        .append("path")
+        .attr("class","hour")
+      
+      var updateTemp = temp.merge(enterTemp)
+        // .attr("d", function(d) {return minutelyTrend([minutely])+minutelyTrend([{time:0,precipIntensity:0},{time:100000,precipIntensity:0},{time:20000,precipIntensity:0},{time:0,precipIntensity:0}])})
+        .attr("d", hourlyTrend)
+        .attr("fill","none")
+      
+
+   
+
+      //remove old ones
+      // var exit = gbars.exit()
+      // exit.remove()
+
+      //add current temp marker
+      var marker = g.selectAll(".now")
+        .data(hourly)
+
+      var updateMarker = marker.enter().append("line")
+        .attr("class", "now")
+        .merge(marker)
+
+
+//       updateMarker.attr("x1", x2.range()[0])
+//         .attr("y1", function(d) {console.log(d.temperature); return y(d.temperature)})
+//         .attr("x2", x2.bandwidth())
+//         .attr("y2", function(d) {return y(d.temperature)})
+//         .attr("stroke-width", 2)
+//         .attr("stroke", "red")
+//         .attr("stroke-opacity",function(d,i, arr) {return 1-i/arr.length})
+
+        gradhigh.attr("stop-color", colors(tempMax))
+        gradlow.attr("stop-color", colors(tempMin))
+
+      })
+  }
+
+  function geoFindMe() {
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var output = document.getElementById('output')
+
+    if (!navigator.geolocation){
+      output.innerHTML = "<p>Geolocation is not supported by your browser</p>";
+      return;
+    }
+
+    function success(position) {
+      console.log("geo find succcess");
+      var latitude  = position.coords.latitude;
+      var longitude = position.coords.longitude;
+
+      fieldLat.value=latitude
+      fieldLon.value=longitude
+
+      output.innerHTML = ""
+    }
+
+    function error() {
+
+      output.innerHTML = "Unable to retrieve your location";
+    }
+
+    output.innerHTML = "<p>Locating…</p>";
+
+    navigator.geolocation.getCurrentPosition(success, error);
+  }
+
+  // geoFindMe()
+  update()
+  
+  var step = function(timestamp) {
+    console.log("hi")
+    
+        var minuteHand = gHands.selectAll(".minuteHand")
+          .data([new Date()])
+          .attr("x2",function(d) { return r0Precip * Math.cos((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
+          .attr("y2",function(d) { return r0Precip * Math.sin((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
+        
+        var hourHand = gHands.selectAll(".hourHand")
+          .data([new Date()])
+          .attr("x2",function(d) { return rHighTemp * Math.cos((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
+          .attr("y2",function(d) { return rHighTemp * Math.sin((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
+        
+                window.requestAnimationFrame(step);
+
+        // window.cancelAnimationFrame(snapback)
+    }
+    var snapback =   window.requestAnimationFrame(step);
+
+</script>
+
+<!-- <a href="whatsapp://send?text=https%3A%2F%2Fwww.paperlesspost.com%2Fflyer%2Fgo%2FNaad3Q7FBZqyQNtXjb0V%3Futm_campaign%3Dflyer-share-dialog%26utm_source%3Dwhatsapp" data-action="share/whatsapp/share">Share via Whatsapp</a>
+<a href="https://api.whatsapp.com/send?text=https%3A%2F%2Fwww.paperlesspost.com%2Fflyer%2Fgo%2FNaad3Q7FBZqyQNtXjb0V%3Futm_campaign%3Dflyer-share-dialog%26utm_source%3Dwhatsapp" data-action="share/whatsapp/share">Share via Whatsapp</a> -->
+
+</body>
+</html>
