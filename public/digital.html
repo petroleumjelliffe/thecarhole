@@ -4,7 +4,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-
+svg.lcd {
+  background: #c7d8bf
+}
+.lcd .segment {
+  fill: #bacab3
+}
+.lcd .lit {
+  fill: #000;
+  stroke: #000;
+}
+svg.red {
+  background: #000
+}
+.red .segment {
+  fill: #300
+}
+.red .lit {
+  fill: #c00;
+  stroke: #f00;
+}
+svg.amber {
+  background: #000
+}
+.amber .segment {
+  fill: #300
+}
+.amber .lit {
+  fill: #e4a500;
+  stroke: #ffb800;
+}
 .frame {
   fill: none;
   stroke: #000;
@@ -52,14 +81,12 @@
   stroke-width:1.5
 }
 
-svg {
-  fill: #ccc;
-}
+
 
 </style>
 </head>
 <body>
-  <svg width="1000" height="250">
+  <svg class="lcd" width="1000" height="250">
     <defs>
       <!-- from https://bl.ocks.org/mbostock/10685278 -->
       <path id="h-segment" d="M0,0 L4,-4 L32,-4 L36,0 L32,4 L4,4 L0,0z"/>
@@ -83,11 +110,20 @@ svg {
     <use xlink:href="#v-segment" x=0 y=12></use>
     <use xlink:href="#h-segment" x=2 y=50></use> -->
   </svg>
+  <form >
+    <input type="radio" name="theme" onclick="change(this)" value="lcd" checked="checked"> <label>LCD</label>
+    <input type="radio" name="theme" onclick="change(this)" value="red" > <label>Red</label>
+    <input type="radio" name="theme" onclick="change(this)" value="amber"> <label>Amber</label>
+  </form>
 
 
 <script src="//d3js.org/d3.v4.min.js"></script>
 <script>
+  var change = function(e) {
 
+    console.log(e.value);
+    d3.select("svg").classed(e.value, true)
+  }
   //get the svg element
   var svg = d3.select("svg"),
       margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -177,6 +213,7 @@ svg {
 
       //update properties for new and existing items
       update.attr("fill", function(d) { return d ? "cyan" : "#eee"; })
+      update.classed("lit", function(d) { return d })
 
       //remove old ones
       var exit = select.exit()
