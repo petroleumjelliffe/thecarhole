@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+.frame {
+  fill: none;
+  stroke: #000;
+}
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+svg {
+  fill: #ccc;
+}
+
+</style>
+</head>
+<body>
+  <svg width="400" height="250"></svg>
+
+
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+  //get the svg element
+  var svg = d3.select("svg"),
+      margin = {top: 20, right: 20, bottom: 30, left: 40},
+      width = +svg.attr("width") - margin.left - margin.right,
+      height = +svg.attr("height") - margin.top - margin.bottom;
+
+  //set the scales
+  // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+  var x = d3.scaleBand()
+    .range([0, width-margin.left-margin.right])
+    //domain will update over time, now() being 0, now-5s being max
+
+
+  var y = d3.scaleLinear()
+    .range([height, 0])
+    .domain([0, 6])
+
+  var ripple = d3.line()
+    .x(function(d) {return x(d.time)})
+    .y(function(d) {return y(d.amplitude*1/(new Date.now()-d.time+1))})
+
+
+
+  //create the parent element
+  var g = svg.append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  //set the axes
+  var gx = g.append("g")
+      .attr("class", "axis axis--x")
+      .attr("transform", "translate(0," + height + ")")
+
+  var gy = g.append("g")
+      .attr("class", "axis axis--y")
+var e =6
+
+var Oscillator = function(spec) {
+  spec.start=spec.start|| Date.now()
+  spec.freq = spec.freq||20
+
+  var amp =   function(t) {
+      return Math.sin((t-spec.start)/1000*spec.freq*2*Math.PI)
+  }
+
+  var that={}
+  that.reset = function() {
+    spec.start = Date.now()
+  }
+  that.setFreq = function(freq) {
+    spec.freq=freq
+  }
+  that.getAmp = function() {
+    var now = Date.now()
+    return amp(now)
+  }
+  that.getPoint= function() {
+    var now = Date.now()
+
+    return {
+      time: now,
+      amplitude: amp(now)
+    }
+  }
+
+  return that
+}
+var spring = new Oscillator({})
+
+var sample= function(array, e) {
+  console.log(array);
+  var now = new Date()
+  array.push(spring.getPoint())
+}
+
+var data=[]
+
+  var update = function() {
+    //get the data and update the graph
+      // console.log(data);
+      var now = new Date()
+      //set the domain to match the data
+      x.domain([now, now.getSeconds()-5*1000])
+      y.domain([0,6])
+
+
+      gx.call(d3.axisBottom(x)
+        .ticks(7)
+        .tickFormat(d3.timeFormat("%a")))
+
+      // gy.call(yAxis)
+
+      //** SELECT, ENTER, UPDATE, EXIT **
+      //select existing bars, if any
+      var select = g.selectAll(".line")
+        .data([data])//, function(d) {console.log(d); return d})
+
+      //new items
+      var enter =  select.enter().append("path")
+        .attr("class", "line")
+
+
+      //update the existing and new elements
+      var update = select.merge(enter)
+
+      //update properties for new and existing items
+      update
+        .attr("d", ripple)
+
+
+      //remove old ones
+      var exit = select.exit()
+      exit.remove()
+  }
+
+  // update()
+  var step = function(timestamp) {
+    if (e>0) {
+      console.log(e);
+      sample(data, e)
+      e-=.1
+      update()
+      window.requestAnimationFrame(step);
+
+    }
+
+    // window.cancelAnimationFrame(snapback)
+
+  }
+  var snapback =   window.requestAnimationFrame(step);
+</script>
+</body>
+</html>
