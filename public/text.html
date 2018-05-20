@@ -1,0 +1,268 @@
+<html>
+
+
+  <body>
+    <script>
+    var game = function() {
+      var spec={}
+      spec.payouts=[
+                [0,10,20],
+                [10,0,20],
+                [10,20,0]
+              ]
+
+        spec.codes= [
+                //region and city code lookup table
+                // Reg, NE, SE, NC, SC, P,  NW, SW
+                    [  6,   4,  8 , 1,  10, 5,  8,  2],//odd - 0
+                    [  3,   8,  8 , 0,  10, 8,  6,  3],
+                    [  3,   6,  8 , 1,  1,  4,  6,  3],
+                    [  3,   6,  1 , 1,  8,  8,  6,  3],
+                    [  6,   5,  6 , 3,  1,  4,  4,  2],
+                    [  6,   8,  4 , 0,  9,  5,  4,  2],
+                    [  4,   5,  6 , 0,  3,  1,  4,  2],
+                    [  5,   1,  10, 7,  3,  6,  3,  8],
+                    [  5,   1,  10, 7,  2,  6,  1,  8],
+                    [  4,   1,  7 , 7,  2,  2,  1,  8],
+                    [  5,   4,  8 , 0,  2,  2,  4,  8],
+                    [  4,   4,  2 , 2,  6,  3,  8,  7],//even 11
+                    [  1,   4,  2 , 2,  6,  3,  8,  7],
+                    [  1,   4,  3 , 2,  6,  0,  7,  5],
+                    [  1,   0,  0 , 2,  4,  0,  7,  7],
+                    [  2,   2,  0 , 4,  8,  0,  7,  6],
+                    [  2,   3,  0 , 4,  0,  3,  7,  1],
+                    [  0,   2,  9 , 5,  5,  3,  5,  4],
+                    [  0,   7,  5 , 6,  7,  3,  2,  0],
+                    [  0,   4,  7 , 6,  7,  7,  0,  9],
+                    [  0,   4,  5 , 0,  5,  7,  0,  4],
+                    [  0,   4,  7 , 6,  6,  5,  8,  4]
+            ]
+
+      spec.regions= [
+          {"label":"Northeast", "index":1},
+          {"label":"Southeast","index":2},
+          {"label":"North Central",   "index":3},
+          {"label":"South Central",           "index":4},
+          {"label":"Plains",          "index":5},
+          {"label":"Northwest",           "index":6},
+          {"label":"Southwest",           "index":7}
+      ]
+
+      spec.cities= [
+          {
+              "label":"Northeast",
+              "cities": [
+                  {"label":"Albany", "index":0},
+                  {"label":"Baltimore","index":1},
+                  {"label":"Boston",  "index":2},
+                  {"label":"Buffalo",         "index":3},
+                  {"label":"New York",            "index":4},
+                  {"label":"Philadelphia",            "index":5},
+                  {"label":"Pittsburgh",          "index":6},
+                  {"label":"Portland, ME",            "index":7},
+                  {"label":"Washington DC", "index":8}
+              ]
+          }, {
+              "label":"Southeast",
+              "cities": [
+                  {"label":"Atlanta",         "index":9},
+                  {"label":"Charleston",          "index":10},
+                  {"label":"Charlotte",           "index":11},
+                  {"label":"Chattanooga",         "index":12},
+                  {"label":"Jacksonville",            "index":13},
+                  {"label":"Knoxville",           "index":14},
+                  {"label":"Miami",           "index":15},
+                  {"label":"Mobile",          "index":16},
+                  {"label":"Norfolk",         "index":17},
+                  {"label":"Richmond",            "index":18},
+                  {"label":"Tampa",           "index":19}
+              ]
+          }, {
+              "label":"North Central",
+              "cities":[
+                  {"label":"Chicago",         "index":20},
+                  {"label":"Cincinnati",          "index":21},
+                  {"label":"Cleveland",           "index":22},
+                  {"label":"Columbus",            "index":23},
+                  {"label":"Detroit",         "index":24},
+                  {"label":"Indianapolis",            "index":25},
+                  {"label":"Milwaukee",           "index":26},
+                  {"label":"St. Louis",           "index":27}
+              ]
+          }, {
+              "label":"South Central",
+              "cities":[
+                  {"label":"Birmingham",          "index":28},
+                  {"label":"Dallas",          "index":29},
+                  {"label":"Fort Worth",          "index":30},
+                  {"label":"Houston",         "index":31},
+                  {"label":"Little Rock",         "index":32},
+                  {"label":"Louisville",          "index":33},
+                  {"label":"Memphis",         "index":34},
+                  {"label":"Nashville",           "index":35},
+                  {"label":"New Orleans",         "index":36},
+                  {"label":"San Antonio",         "index":37},
+                  {"label":"Shreveport",          "index":38}
+              ]
+          }, {
+              "label":"South Central",
+              "cities":[
+                  {"label":"Denver",          "index":39},
+                  {"label":"Des Moines",          "index":40},
+                  {"label":"Fargo",           "index":41},
+                  {"label":"Kansas City",         "index":42},
+                  {"label":"Minneapolis",         "index":43},
+                  {"label":"Oklahoma City",           "index":44},
+                  {"label":"Omaha",           "index":45},
+                  {"label":"Pueblo",          "index":46},
+                  {"label":"St. Paul",            "index":47}
+              ]
+          }, {
+
+              "label":"South Central",
+              "cities":[
+                  {"label":"Billings",            "index":48},
+                  {"label":"Butte",           "index":49},
+                  {"label":"Casper",          "index":50},
+                  {"label":"Pocatello",           "index":51},
+                  {"label":"Portland, OR",            "index":52},
+                  {"label":"Rapid City",          "index":53},
+                  {"label":"Salt Lake City",          "index":54},
+                  {"label":"Seattle",         "index":55},
+                  {"label":"Spokane",         "index":56}
+              ]
+          }, {
+
+              "label":"Southwest",
+              "cities":[
+                  {"label":"El Paso",         "index":57},
+                  {"label":"Las Vegas",           "index":58},
+                  {"label":"Los Angeles",         "index":59},
+                  {"label":"Oakland",         "index":60},
+                  {"label":"Phoenix",         "index":61},
+                  {"label":"Reno",            "index":62},
+                  {"label":"Sacramento",          "index":63},
+                  {"label":"San Diego",           "index":64},
+                  {"label":"San Francisco",           "index":65},
+                  {"label":"Tucumcari",           "index":66}
+              ]
+          }
+      ]
+
+               //rolls 1 die for odd/even, and 2 dice for 2-12
+      spec.roll = function () {
+          var row= Math.floor(Math.random()*6) + Math.floor(Math.random()*6) + Math.floor(Math.random()*2) *11;
+          console.log("row is "+row);
+          return row;
+      }
+
+      spec.getCity = function(region) {
+        var index = region.index
+        var cityCode = spec.codes[spec.roll()][index]
+        console.log(index);
+        return spec.cities[index-1].cities[cityCode]
+      }
+
+      spec.players=[]
+      spec.calculatePayout = function(origin, destination) {
+
+      }
+
+      var that = {}
+
+      that.addPlayer =function(color) {
+        var e={}
+        e.color=color
+        e.destinations=[]
+       spec.players.push({
+         // color:color,
+         // destinations:[],
+         addDest: function(update,prompt) {
+           var regionCode = spec.codes[spec.roll()][0]
+           var region = spec.regions[regionCode]
+           console.log(region);
+           //HOME - no destinations
+           if (e.destinations.length == 0) {
+             e.destinations.push(spec.getCity(region))
+             update()
+           } else {
+             //PROMPT Same Region
+             if (Math.round(Math.random())) {
+             // if (region == e.destinations[e.destinations.length]) {
+             //TODO: need to store region in the
+               that=this
+               prompt(function(region){
+                 console.log(region);
+                 e.destinations.push(spec.getCity(region))
+                 update()
+               })
+               //NORMAL
+             } else {
+               e.destinations.push(spec.getCity(region))
+               update()
+               // calculatePayout
+             }
+           }
+         },
+         listDestinations: function() {
+           return e.destinations
+         },
+         currentDestination: function() {
+           return e.destinations[e.destinations.length-1]
+
+         }
+       })
+
+        return spec.players[spec.players.length-1]
+      }
+      that.currentDestinations = function() {
+        return spec.players.map(function(d) {
+          console.log(d);
+          return d.currentDestination()
+        })
+      }
+
+      that.listPlayers = function() {
+        return spec.players
+      }
+
+     return that
+    }
+
+    var game = game()
+    var red = game.addPlayer("red");
+    var two  = game.addPlayer(2)
+
+console.log("idle");
+    console.log("randomize regions");
+    two.addDest(function() {
+      console.log("update");
+      console.log("show region");
+      console.log("randomize cities in region");
+      console.log("show city");
+
+      console.log(game.currentDestinations())
+    }, function(callback) {
+      console.log("prompt");
+      console.log("ask for region");
+
+      callback(  {"label":"Northeast", "index":1})
+
+    })
+    two.addDest(function() {
+      console.log("update");
+      console.log("show region");
+      console.log("randomize cities in region");
+      console.log("show city");
+      console.log(game.currentDestinations())
+    }, function(callback) {
+      console.log("prompt");
+      console.log("ask for region");
+
+      callback(  {"label":"Northeast", "index":1})
+
+    })
+
+    </script>
+  </body>
+</html>

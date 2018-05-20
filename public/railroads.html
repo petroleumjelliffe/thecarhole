@@ -6,6 +6,41 @@
   fill: #ccc;
   stroke: #fff;
 }
+/* .NORTHEAST {
+  fill: #f00;
+}
+.SOUTHEAST {
+  fill: #0cf;
+}
+.PLAINS {
+  fill: #fc0;
+}
+.NORTHWEST {
+  fill: #00f;
+}
+.SOUTHWEST {
+  fill: #0f0;
+}
+.NORTH-CENTRAL {
+  fill: #cfc;
+}
+.SOUTH-CENTRAL {
+  fill: #0fc;
+} */
+
+
+.city {
+  stroke:#fff;
+  stroke-width:2px;
+  transition: .5s ease-out;
+  /* fill: none; */
+  opacity: 0;
+}
+.city.lit, .region.lit .city {
+  transition:.1s ease-in;
+  opacity:1;
+}
+
 </style>
 <body>
 <script src="https://d3js.org/d3-array.v1.min.js"></script>
@@ -18,6 +53,8 @@
 <script src="https://d3js.org/d3-request.v1.min.js"></script>
 
 <script src="http://d3js.org/topojson.v1.min.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
 <script>
 var width = 960,
     height = 500;
@@ -30,6 +67,20 @@ var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
+    var bg = svg.append("g")
+    var dots = svg.append("g")
+    var regionList = ["NORTHEAST","SOUTHEAST","NORTH-CENTRAL", "SOUTH-CENTRAL","PLAINS","NORTHWEST", "SOUTHWEST"]
+    // var colors = d3.scaleOrdinal(d3.schemeAccent)
+
+    var colorsLit = d3.scaleOrdinal()
+      .domain(regionList) //REGIONS
+      .range([d3.hsl(0,1, .5), d3.hsl(45,1,.5), d3.hsl(90,1,.5), d3.hsl(135,1,.5), d3.hsl(180,1,.5), d3.hsl(225,1,.5), d3.hsl(270,1,.5), d3.hsl(315,1,.5)]);
+
+      var colorsDim = d3.scaleOrdinal()
+        .domain(regionList) //REGIONS
+        .range([d3.hsl(0,.5, .5), d3.hsl(45,.5,.5), d3.hsl(90,.5,.5), d3.hsl(135,.5,.5), d3.hsl(180,.5,.5), d3.hsl(225,.5,.5), d3.hsl(270,.5,.5), d3.hsl(315,.5,.5)]);
+
+
 d3.json("js/us.json", function(error, us) {
   console.log(us);
   // var select = svg.selectAll(".g")
@@ -40,92 +91,134 @@ d3.json("js/us.json", function(error, us) {
   //     console.log(d)
   //     return path(d)
   //   });
-
-
   var topo = topojson.feature(us, us.objects.states)
   console.log(topo);
 
-  svg.append("path")
+  bg.append("path")
       .attr("class", "states")
       .datum(topo)
       .attr("d", path);
+})
 
-      var cities = [
-        [-73.7562317,42.6525793],
-        [-76.6121893,39.2903848],
-        [-71.250467,42.3140089],
-        [-78.9344822,42.8962176],
-        [-74.2598712,40.6976701],
-        [-75.258117,40.0024137],
-        [-80.8601033,40.2505434],
-        [-70.3515999,43.6671733],
-        [-77.1546617,38.89378],
-        [-84.5606902,33.7679192],
-        [-80.1045624,32.7958375],
-        [-80.979913,35.2030728],
-        [-85.5188784,35.0979732],
-        [-82.243564,30.3437949],
-        [-84.2052695,35.9581363],
-        [-80.350318,25.7699739],
-        [-88.229021,30.702136],
-        [-76.3798049,36.9307392],
-        [-77.6333459,37.5245782],
-        [-82.734471,27.9941986],
-        [-88.0121478,41.8333925],
-        [-84.6804857,39.1362562],
-        [-81.8459438,41.497447],
-        [-92.8292717,39.4171804],
-        [-83.3793885,42.3523699],
-        [-86.41293,39.7794476],
-        [-88.1075151, 43.0580569],
-        [-90.3835477,38.6532851],
-        [-89.6445373,37.8897651],
-        [-97.011731,32.8203525],
-        [-97.011731,32.8203525],
-        [-95.9617495,29.8159954],
-        [-92.4780137,34.7242069],
-        [-85.9569564,38.1884721],
-        [-90.2509744,35.1288636],
-        [-87.0654323,36.186314],
-        [-90.0226501,30.0332195],
-        [-98.7946002,29.4817349],
-        [-93.9538135,32.4612479],
-        [-105.1352965,39.7640021],
-        [-93.7466013,41.5668418],
-        [-96.9685969,46.8541125],
-        [-94.8559106,39.0921167],
-        [-93.3315183,44.9706756],
-        [-97.7593904,35.4828833],
-        [-96.3614327,41.2915193],
-        [-104.6609088, 38.2673594],
-        [-93.1760935,44.9398076],
-        [-108.7037678,45.7818339],
-        [-112.917892,45.9054805],
-        [-106.464965,42.8217692],
-        [-112.6360923,42.8685126],
-        [-122.7945068,45.5435634],
-        [-103.3226649,44.0696281],
-        [-112.0605705,40.7767833],
-        [-122.4821475,47.6129432],
-        [-117.552233,47.6727552],
-        [-103.8372047,35.1665573],
-        [-115.315086,36.1251958],
-        [-118.6919205,34.0201613],
-        [-122.3754124,37.7583925],
-        [-112.4052392,33.6050991],
-        [-119.9909255,39.557847],
-        [-121.5829968,38.561457],
-        [-117.3891727,32.8248175],
-        [-122.5076404,37.757815],
-        [-103.8372047,35.1665573]
-      ]
+var cities = ["Atlanta", "Fargo", "Denver"]
 
-      var dots = svg.selectAll(".cities")
-        .data(cities)
-        .enter().append("circle")
-        .attr("r", 5)
-        .attr("cx", function(d) {return projection(d)[0]})
-        .attr("cy", function(d) {return projection(d)[1]})
-});
+var displayPlayers = function(cities) {
+  var citylist = cities.map(n => `.${n}`).join(",")
+  console.log(citylist);
+
+  //clear board
+  var select = dots.selectAll(".city")
+    .classed("lit", false)
+
+  //show just the cities passed in
+  var x = dots.selectAll(citylist)
+    .classed("lit", true)
+    console.log(x);
+}
+var displayRegion = function(region) {
+  //clear board
+  var select = dots.selectAll(".region")
+    .classed("lit", false)
+
+  //show just the cities passed in
+  var x = dots.selectAll(`.${region}`)
+    .classed("lit", true)
+}
+
+var randomize = function() {
+  var select = dots.selectAll(".city")
+    .classed("lit", function(d) {return Math.round(Math.random())})
+}
+var clearCities = function() {
+  var regions = dots.selectAll(".region")
+    .classed("lit", false)
+  var select = dots.selectAll(".city")
+    .classed("lit", false)
+}
+var randomizeRegions = function() {
+
+  var regions = dots.selectAll(".region")
+    .classed("lit", function(d, i,j,k) {console.log(d,i,j,k);return Math.round(Math.random())})
+}
+var randomizeCities = function(region) {
+  //
+  //randomize the cities within a region
+  var cities = dots.selectAll(`.${region}`)
+    .classed("lit", false)
+    .selectAll("circle")
+    .classed("lit", function(d, i,j,k) {console.log(d,i,j,k);return Math.round(Math.random())})
+}
+
+var render = function(animation) {
+  var last = 0
+  var step = function(now) {
+    if(!last || now - last >= 400) {
+        last = now;
+        animation()
+    }
+    console.log("loop");
+    window.requestAnimationFrame(step);
+  }
+  var loop =   window.requestAnimationFrame(step);
+  return loop
+
+}
+
+console.log(render(randomize))
+
+// var initMap = function() {
+  d3.csv("cities.csv", function(error, data) {
+    var cities=  d3.nest()
+    .key(function(d){return d.region})
+    .entries(data)
+
+  console.log(cities);
+
+  var selectRegion = dots.selectAll(".region")
+    .data(cities)
+
+  //new items
+  var enterRegion =  selectRegion.enter().append("g")
+    .attr("class", function(d) {return `region ${d.key}`})
+
+  //update the existing and new elements
+  var updateRegion = selectRegion.merge(enterRegion)
+    var regionlabels = updateRegion.append("text")
+      .text(function(d) {return d.key})
+      //.attr("x",)
+
+    var selectcity = updateRegion.selectAll(".city")
+      .data(function(d) {console.log(d); return d.values})
+
+    //new items
+    var entercity =  selectcity.enter().append("circle")
+    // .attr("class", "city")
+    .attr("class", function(d) {return `city ${d.city}`})
+
+    //update the existing and new elements
+    var updatecity = selectcity.merge(entercity)
+
+    //update properties for new and existing items
+    updatecity
+      .attr("r",9)
+      .attr("cx",function(d) {return projection([d.lon,d.lat])[0]})
+      .attr("cy",function(d) {return projection([d.lon,d.lat])[1]})
+      .attr("fill",function(d) {return colorsDim(d.region)})
+
+    //remove old ones
+    var exitcity = selectcity.exit()
+    exitcity.remove()
+
+
+
+
+  //remove old ones
+  var exitRegion = selectRegion.exit()
+  exitRegion.remove()
+
+  })
+
+  // var loop =   window.requestAnimationFrame(step);
+
 
 </script>
