@@ -1,0 +1,295 @@
+"<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+.frame {
+  fill: none;
+  stroke: #000;
+}
+.gbar text {
+  fill: none;
+}
+.gbar:hover text {
+  fill:#ccc;
+}
+.temp {
+  font: 1em sans-serif;
+
+}
+.axis text {
+  font: 1.5em sans-serif;
+  text-anchor: right;
+}
+
+
+.axis line,
+.axis circle {
+  fill: none;
+  stroke: #777;
+  stroke-dasharray: 1,4;
+}
+
+.axis :last-of-type circle {
+  stroke: #333;
+  stroke-dasharray: none;
+}
+
+.line, .gline {
+  fill: none;
+  stroke: red;
+  stroke-width: 1.5px;
+}
+
+.bar {
+  /* fill:#333; */
+}
+
+.major-axis {
+  stroke:#000;
+  stroke-width:1.5
+}
+
+svg {
+  fill: #ccc;
+}
+
+</style>
+</head>
+<body>
+  <svg width="400" height="250"></svg>
+    <p id="output">
+
+    </p>
+
+  <form method="get" id="coords" >
+    <input type="button" value="locate" onclick="geoFindMe()">
+    <input type="text" name="lat" id="lat">
+    <input type="text" name="lon" id="lon">
+    <input type="button" value="GO" onclick="update()">
+
+  </form>
+  <!-- <button onclick="update()">GO</button> -->
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+    //get the svg element
+    var svg = d3.select("svg"),
+        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
+
+    var defs = svg.append("defs");
+    var gradient = defs.append("linearGradient")
+       .attr("id", "svgGradient")
+       .attr("x1", "0%")
+       .attr("x2", "0%")
+       .attr("y1", "0%")
+       .attr("y2", "100%")
+       .attr("gradientUnits","userSpaceOnUse")
+
+     //set the color gradient
+     var gradhigh = gradient.append("stop")
+        .attr('class', 'start')
+        .attr("offset", "0%")
+        // .attr("stop-color", colors(tempMax))
+        .attr("stop-opacity", 1);
+
+     var gradlow =  gradient.append("stop")
+        .attr('class', 'end')
+        .attr("offset", "100%")
+        // .attr("stop-color", colors(tempMin))
+        .attr("stop-opacity", 1);
+
+
+
+    //set the scales
+    // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
+
+    var x2 = d3.scaleLinear()
+      .domain([0,1])
+      .range([0, width-margin.left-margin.right])
+      // .padding(0.2)
+
+    var y = d3.scaleLinear()
+      .range([height-margin.top, 0])
+
+    var fade = d3.scaleTime()
+      .range([1,0])
+
+    var line = d3.line()
+      .x(function(d) {console.log(d);return x2(d.humidity)})
+      .y(function(d) {return y(d.temperature)})
+      // .curve()
+
+    var colors = d3.scaleLinear()
+      .domain([0,65,75,100]) //temps
+      .interpolate(d3.interpolateCubehelix)
+      .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,1), d3.hsl(0,1,.5)]);
+
+    //create the parent element
+    var g = svg.append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    //set the axes
+    var gx = g.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height + ")")
+
+    var gy = g.append("g")
+        .attr("class", "axis axis--y")
+
+
+  var update = function() {
+    //call the weather api at the specified location
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var url = "/weather"+
+      "?lat="+fieldLat.value+
+      "&lon="+fieldLon.value
+
+    //get the data and update the graph
+    d3.json(url, function(data) {
+      // console.log(data);
+
+      var hourly = data.hourly.data
+      console.log(hourly)
+
+      var currentTemp = Math.round(data.currently.temperature)
+      var tempMax = d3.max(hourly.map(function(d) {return (d.temperature)}))
+      var tempMin = d3.min(hourly.map(function(d) {return (d.temperature)}))
+      var timeMax = d3.max(hourly.map(function(d) {return (d.time)}))
+
+
+      y.domain([tempMin, tempMax])
+      fade.domain([hourly[0].time, timeMax])
+
+      //set the high, low, current temp ticks
+      var yAxis = d3.axisLeft(y)
+      var yTicks = y.ticks(0)
+      yTicks.push(tempMax)
+      yTicks.push(currentTemp)
+      yTicks.push(tempMin)
+      yAxis.tickValues(yTicks)
+      console.log(yTicks);
+
+      gx.call(d3.axisBottom(x2)
+        .ticks(7))
+        // .tickFormat(d3.timeFormat("%a")))
+
+      gy.call(yAxis)
+
+      //select existing bars, if any
+      var hourlyTrend = g.selectAll(".gline")
+        .data([hourly])//, function(d) {console.log(d); return d})
+
+      //new items
+      var enter =  hourlyTrend.enter().append("path")
+        .attr("class", "gline")
+        .attr("d", line)
+
+      //update the existing and new elements
+      var update = hourlyTrend.merge(enter)
+
+      update.select(".gline")
+
+      //remove old ones
+      var exit = hourlyTrend.exit()
+      exit.remove()
+
+      //add current temp marker
+      var marker = g.selectAll(".dot")
+        .data(hourly)
+
+      var updateMarker = marker.enter().append("circle")
+        .attr("class", "dot")
+        .merge(marker)
+
+      updateMarker
+        .attr("cx", function(d) {return x2(d.humidity)})
+        .attr("cy", function(d) {return y(d.temperature)})
+        .attr("r", function(d) { return 2*fade(d.time)+1}) //add a scale
+        .attr("fill", "black") //fade into future
+        .attr("opacity", function(d) { return fade(d.time)})
+        // .attr("stroke", "red")
+        // .attr("stroke-opacity",function(d,i, arr) {return 1-i/arr.length})
+
+
+      // var majorTicks = y.ticks(3)
+        // majorTicks.push(32)
+
+      var gticks = g.selectAll(".lines")
+        .data([0,10,20,30,40,50,60,70,80,90,100,110])
+        // .exit().remove()
+      var enterTicks = gticks
+        .enter().append("g")
+        .attr("class","lines")
+
+      enterTicks.append("line")
+        // .attr("class")
+
+
+      var updateTicks= enterTicks.merge(gticks)
+
+      updateTicks.select("line")
+        .attr("x1", function(d) {return x2.range()[0]+1})
+        .attr("y1", function(d) {return y(d)})
+        .attr("x2", function(d) {return x2.range()[1]})
+        .attr("y2", function(d) {return y(d)})
+        .attr("stroke-width", 3)
+        .attr("stroke", "white")
+
+      gticks.exit().remove
+
+
+
+        gradhigh.attr("stop-color", colors(tempMax))
+        gradlow.attr("stop-color", colors(tempMin))
+
+      })
+  }
+
+  function geoFindMe() {
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var output = document.getElementById('output')
+
+    if (!navigator.geolocation){
+      output.innerHTML = "<p>Geolocation is not supported by your browser</p>";
+      return;
+    }
+
+    function success(position) {
+      console.log("geo find succcess");
+      var latitude  = position.coords.latitude;
+      var longitude = position.coords.longitude;
+
+      fieldLat.value=latitude
+      fieldLon.value=longitude
+
+      output.innerHTML = ""
+    }
+
+    function error() {
+
+      output.innerHTML = "Unable to retrieve your location";
+    }
+
+    output.innerHTML = "<p>Locating…</p>";
+
+    navigator.geolocation.getCurrentPosition(success, error);
+  }
+
+  // geoFindMe()
+  update()
+
+</script>
+
+<a href="whatsapp://send?text=https%3A%2F%2Fwww.paperlesspost.com%2Fflyer%2Fgo%2FNaad3Q7FBZqyQNtXjb0V%3Futm_campaign%3Dflyer-share-dialog%26utm_source%3Dwhatsapp" data-action="share/whatsapp/share">Share via Whatsapp</a>
+<a href="https://api.whatsapp.com/send?text=https%3A%2F%2Fwww.paperlesspost.com%2Fflyer%2Fgo%2FNaad3Q7FBZqyQNtXjb0V%3Futm_campaign%3Dflyer-share-dialog%26utm_source%3Dwhatsapp" data-action="share/whatsapp/share">Share via Whatsapp</a>
+
+</body>
+</html>

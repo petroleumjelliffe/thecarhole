@@ -28,9 +28,9 @@
     fill:none;
     stroke: #000;
   }
-  
 
-  
+
+
 .frame {
   fill: none;
   stroke: #000;
@@ -110,7 +110,7 @@
         width = +svg.attr("width") - margin.left - margin.right,
         height = +svg.attr("height") - margin.top - margin.bottom;
 
-  
+
     var defs = svg.append("defs");
     var gradient = defs.append("linearGradient")
        .attr("id", "svgGradient")
@@ -143,28 +143,28 @@
 
 //     var y = d3.scaleLinear()
 //       .range([height-margin.top, 0])
-    var r0Precip=150, 
+    var r0Precip=150,
         rMaxPrecip = 140,
         rLowTemp = 75,
         rHighTemp = 100
-    
-    
-    
+
+
+
     var thetaMinute = d3.scaleLinear()
       .domain([0,60])
       .range([0,2*Math.PI])
-    
+
     var thetaDay = d3.scaleLinear()
       .domain([0,24])
       .range([0,8*Math.PI/2])
-    
+
     var rTempRange = d3.scaleLinear()
       .range([rLowTemp, rHighTemp])
-    
+
     var rPrecipIntensity = d3.scaleLinear()
       .range([rMaxPrecip ,r0Precip])
       .domain([.1,0])
-    
+
     //precipitation
     var minutelyTrend = d3.radialLine()
       .angle(function(d) {
@@ -189,7 +189,33 @@
       .radius(function(d) {return rTempRange(d.temperature)})
       // .curve(d3.curveCatmullRom)
 
-    
+      function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+        var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+
+        return {
+          x: centerX + (radius * Math.cos(angleInRadians)),
+          y: centerY + (radius * Math.sin(angleInRadians))
+        };
+      }
+
+      function describeArc(x, y, radius, startAngle, endAngle){
+
+          var start = polarToCartesian(x, y, radius, endAngle);
+          var end = polarToCartesian(x, y, radius, startAngle);
+
+          var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+          var d = [
+              "M", start.x, start.y,
+              "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+          ].join(" ");
+
+          return d;
+      }
+      console.log(describeArc(width/2,height/2,30,0,30));
+      console.log(describeArc(width/2,height/2,50,30,0));
+
+
 
     var colors = d3.scaleLinear()
       .domain([0,70,100]) //temps
@@ -199,7 +225,7 @@
     //CREATE THE DOM
     var g = svg.append("g")
         .attr("transform", "translate(" + width/2 + "," + height/2 + ")");
-  
+
     g.append("circle")
       .attr("class","background")
       .attr("r",149)
@@ -211,10 +237,10 @@
 
     var gPrecip = g.append("g")
         .attr("class", "axis axis--y")
-    
+
     var gHands = g.append("g")
         .attr("class", "hands")
-    
+
     gHands.append("line")
       .attr("class","minuteHand")
             .attr("x1",0)
@@ -233,20 +259,20 @@
       .data(mTicks.ticks(60))
       .enter().append("line")
       .attr("class","rticks")
-      .attr("x1",function(d) { return 145*Math.cos(d*2*Math.PI/60 )})
-      .attr("x2",function(d) { return 150*Math.cos(d*2*Math.PI/60 )})
-      .attr("y1",function(d) { return 145*Math.sin(d*2*Math.PI/60 )})
-      .attr("y2",function(d) { return 150*Math.sin(d*2*Math.PI/60 )})
+      .attr("x1",function(d) { return (rMaxPrecip-5)*Math.cos(d*2*Math.PI/60 )})
+      .attr("x2",function(d) { return r0Precip*Math.cos(d*2*Math.PI/60 )})
+      .attr("y1",function(d) { return (rMaxPrecip-5)*Math.sin(d*2*Math.PI/60 )})
+      .attr("y2",function(d) { return r0Precip*Math.sin(d*2*Math.PI/60 )})
 
     var majorTicks = gPrecip.selectAll(".jticks")
       .data(mTicks.ticks(12))
       .enter().append("line")
       .attr("class","jticks")
-      .attr("x1",function(d) { return 140*Math.cos(d*2*Math.PI/60 )})
-      .attr("x2",function(d) { return 150*Math.cos(d*2*Math.PI/60 )})
-      .attr("y1",function(d) { return 140*Math.sin(d*2*Math.PI/60 )})
-      .attr("y2",function(d) { return 150*Math.sin(d*2*Math.PI/60 )})
-    
+      .attr("x1",function(d) { return rMaxPrecip*Math.cos(d*2*Math.PI/60 )})
+      .attr("x2",function(d) { return r0Precip*Math.cos(d*2*Math.PI/60 )})
+      .attr("y1",function(d) { return rMaxPrecip*Math.sin(d*2*Math.PI/60 )})
+      .attr("y2",function(d) { return r0Precip*Math.sin(d*2*Math.PI/60 )})
+
     var majorTicks = gPrecip.selectAll(".labelMinutes")
       .data(mTicks.ticks(12).slice(0,12))
       .enter().append("text")
@@ -258,7 +284,7 @@
       .text(function(d){return d})
 
 
-      
+
   var update = function() {
     //call the weather api at the specified location
     var fieldLat = document.getElementById("lat");
@@ -295,7 +321,7 @@
       // x2.domain(daily.map(function(d) {return new Date(d.time*1000)}))
       // y.domain([tempMin, tempMax])
       rTempRange.domain([tempMin, tempMax])
-     
+
       var rTicks = []
       rTicks.push(tempMax)
       rTicks.push(currentTemp)
@@ -306,15 +332,15 @@
         .enter().append("circle")
         .attr("class","temp")
         .attr("r", function(d) {return rTempRange(d)})
-      
- 
+
+
       var precip = gr.selectAll(".minute")
         .data([minutely])
-      
+
       var enterPrecip = precip.enter()
         .append("path")
         .attr("class","minute")
-      
+
       var updatePrecip = precip.merge(enterPrecip)
         // .attr("d", function(d) {return minutelyTrend([minutely])+minutelyTrend([{time:0,precipIntensity:0},{time:100000,precipIntensity:0},{time:20000,precipIntensity:0},{time:0,precipIntensity:0}])})
         .attr("d", minutelyTrend)
@@ -322,18 +348,21 @@
 
       var temp = gr.selectAll(".hour")
         .data([hourly])
-      
+
       var enterTemp = temp.enter()
         .append("path")
         .attr("class","hour")
-      
+
       var updateTemp = temp.merge(enterTemp)
         // .attr("d", function(d) {return minutelyTrend([minutely])+minutelyTrend([{time:0,precipIntensity:0},{time:100000,precipIntensity:0},{time:20000,precipIntensity:0},{time:0,precipIntensity:0}])})
         .attr("d", hourlyTrend)
         .attr("fill","none")
-      
 
-   
+
+
+
+
+
 
       //remove old ones
       // var exit = gbars.exit()
@@ -395,20 +424,20 @@
 
   // geoFindMe()
   update()
-  
+
   var step = function(timestamp) {
     console.log("hi")
-    
+
         var minuteHand = gHands.selectAll(".minuteHand")
           .data([new Date()])
           .attr("x2",function(d) { return r0Precip * Math.cos((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
           .attr("y2",function(d) { return r0Precip * Math.sin((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
-        
+
         var hourHand = gHands.selectAll(".hourHand")
           .data([new Date()])
           .attr("x2",function(d) { return rHighTemp * Math.cos((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
           .attr("y2",function(d) { return rHighTemp * Math.sin((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
-        
+
                 window.requestAnimationFrame(step);
 
         // window.cancelAnimationFrame(snapback)
