@@ -189,12 +189,13 @@ svg {
       //new items
       var enter =  hourlyTrend.enter().append("path")
         .attr("class", "gline")
-        .attr("d", line)
+        // .attr("d", line)
 
       //update the existing and new elements
       var update = hourlyTrend.merge(enter)
 
-      update.select(".gline")
+      update
+      .attr("d", line)
 
       //remove old ones
       var exit = hourlyTrend.exit()
