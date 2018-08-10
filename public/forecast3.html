@@ -121,7 +121,7 @@ svg {
       .range([1,0])
 
     var line = d3.line()
-      .x(function(d) {console.log(d);return x2(d.humidity)})
+      .x(function(d) {console.log(d);return x2(d.dewPoint)})
       .y(function(d) {return y(d.temperature)})
       // .curve()
 
@@ -163,6 +163,11 @@ svg {
       var tempMin = d3.min(hourly.map(function(d) {return (d.temperature)}))
       var timeMax = d3.max(hourly.map(function(d) {return (d.time)}))
 
+      var dewMax = d3.max(hourly.map(function(d) {return (d.dewPoint)}))
+      var dewMin = d3.min(hourly.map(function(d) {return (d.dewPoint)}))
+
+      // x2.domain([0,1]) //humidity
+      x2.domain([dewMin, dewMax]) //dewPoint
 
       y.domain([tempMin, tempMax])
       fade.domain([hourly[0].time, timeMax])
@@ -210,7 +215,8 @@ svg {
         .merge(marker)
 
       updateMarker
-        .attr("cx", function(d) {return x2(d.humidity)})
+      // .attr("cx", function(d) {return x2(d.humidity)})
+      .attr("cx", function(d) {return x2(d.dewPoint)})
         .attr("cy", function(d) {return y(d.temperature)})
         .attr("r", function(d) { return 2*fade(d.time)+1}) //add a scale
         .attr("fill", "black") //fade into future

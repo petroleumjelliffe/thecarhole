@@ -1,75 +1,75 @@
-<!DOCTYPE html>
+"<!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<style>
+  <style>
 
-.frame {
-  fill: none;
-  stroke: #000;
-}
-.gbar text {
-  fill: none;
-}
-.gbar:hover text {
-  fill:#ccc;
-}
-.temp {
-  font: 1em sans-serif;
+    .frame {
+      fill: none;
+      stroke: #000;
+    }
+    .gbar text {
+      fill: none;
+    }
+    .gbar:hover text {
+      fill:#ccc;
+    }
+    .temp {
+      font: 1em sans-serif;
 
-}
-.axis text {
-  font: 1.5em sans-serif;
-  text-anchor: right;
-}
+    }
+    .axis text {
+      font: 1.5em sans-serif;
+      text-anchor: right;
+    }
 
 
-.axis line,
-.axis circle {
-  fill: none;
-  stroke: #777;
-  stroke-dasharray: 1,4;
-}
+    .axis line,
+    .axis circle {
+      fill: none;
+      stroke: #777;
+      stroke-dasharray: 1,4;
+    }
 
-.axis :last-of-type circle {
-  stroke: #333;
-  stroke-dasharray: none;
-}
+    .axis :last-of-type circle {
+      stroke: #333;
+      stroke-dasharray: none;
+    }
 
-.line {
-  fill: none;
-  stroke: red;
-  stroke-width: 1.5px;
-}
+    .line, .gline {
+      fill: none;
+      stroke: red;
+      stroke-width: 1.5px;
+    }
 
-.bar {
-  /* fill:#333; */
-}
+    .bar {
+      /* fill:#333; */
+    }
 
-.major-axis {
-  stroke:#000;
-  stroke-width:1.5
-}
+    .major-axis {
+      stroke:#000;
+      stroke-width:1.5
+    }
 
-svg {
-  fill: #ccc;
-}
+    svg {
+      fill: #ccc;
+    }
 
-</style>
+  </style>
+
 </head>
 <body>
   <svg width="400" height="250"></svg>
     <p id="output">
-
     </p>
 
   <form method="get" id="coords" >
     <input type="button" value="locate" onclick="geoFindMe()">
     <input type="text" name="lat" id="lat">
     <input type="text" name="lon" id="lon">
-    <input type="button" value="GO" onclick="update()">
+    <input type="button" value="GO" onclick="update(propXScale,propYScale)">
 
   </form>
   <!-- <button onclick="update()">GO</button> -->
@@ -95,25 +95,32 @@ svg {
      var gradhigh = gradient.append("stop")
         .attr('class', 'start')
         .attr("offset", "0%")
-        // .attr("stop-color", colors(tempMax))
+        // .attr("stop-color", colors(yMax))
         .attr("stop-opacity", 1);
 
      var gradlow =  gradient.append("stop")
         .attr('class', 'end')
         .attr("offset", "100%")
-        // .attr("stop-color", colors(tempMin))
+        // .attr("stop-color", colors(yMin))
         .attr("stop-opacity", 1);
 
 
 
     //set the scales
-    // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
-    var x2 = d3.scaleBand()
+    var x2 = d3.scaleLinear()
+      .domain([0,1])
       .range([0, width-margin.left-margin.right])
-      .padding(0.2)
+      // .padding(0.2)
 
     var y = d3.scaleLinear()
       .range([height-margin.top, 0])
+
+    var fade = d3.scaleTime()
+      .range([1,0])
+
+    propXScale = "pressure"
+    propYScale = "temperature"
+
 
     var colors = d3.scaleLinear()
       .domain([0,65,75,100]) //temps
@@ -133,7 +140,7 @@ svg {
         .attr("class", "axis axis--y")
 
 
-  var update = function() {
+  var update = function(propXScale, propYScale) {
     //call the weather api at the specified location
     var fieldLat = document.getElementById("lat");
     var fieldLon = document.getElementById("lon");
@@ -141,103 +148,93 @@ svg {
       "?lat="+fieldLat.value+
       "&lon="+fieldLon.value
 
+
+
+
     //get the data and update the graph
     d3.json(url, function(data) {
       // console.log(data);
 
-      var hourly = data.hourly.data.slice(0,5)
+      var hourly = data.hourly.data
       console.log(hourly)
 
-      //round the temps
-      var daily = data.daily.data
-        .map(function(d) {
-          d.temperatureMax = Math.round(d.temperatureMax)
-          d.temperatureMin = Math.round(d.temperatureMin)
-          return d
-        })
-      console.log(daily);
+      var xMax = d3.max(hourly.map(function(d) {return (d[propXScale])}))
+      var xMin = d3.min(hourly.map(function(d) {return (d[propXScale])}))
+      // x2.domain([0,1]) //humidity
+      x2.domain([xMin, xMax]) //dewPoint
 
-      var currentTemp = Math.round(data.currently.temperature)
-      var tempMax = d3.max(daily.map(function(d) {return (d.temperatureMax)}))
-      var tempMin = d3.min(daily.map(function(d) {return (d.temperatureMin)}))
+      var currentY = Math.round(data.currently[propYScale])
+      var yMax = d3.max(hourly.map(function(d) {return (d[propYScale])}))
+      var yMin = d3.min(hourly.map(function(d) {return (d[propYScale])}))
+      y.domain([yMin, yMax])
 
-      x2.domain(daily.map(function(d) {return new Date(d.time*1000)}))
-      y.domain([tempMin, tempMax])
+      var timeMax = d3.max(hourly.map(function(d) {return (d.time)}))
+      fade.domain([hourly[0].time, timeMax])
+
+      var line = d3.line()
+        .x(function(d) {console.log(d);return x2(d[propXScale])})
+        .y(function(d) {return y(d[propYScale])})
+        // .curve()
 
       //set the high, low, current temp ticks
       var yAxis = d3.axisLeft(y)
       var yTicks = y.ticks(0)
-      yTicks.push(tempMax)
-      yTicks.push(currentTemp)
-      yTicks.push(tempMin)
+      yTicks.push(yMax)
+      yTicks.push(currentY)
+      yTicks.push(yMin)
       yAxis.tickValues(yTicks)
       console.log(yTicks);
 
       gx.call(d3.axisBottom(x2)
-        .ticks(7)
-        .tickFormat(d3.timeFormat("%a")))
+        .ticks(7))
+        // .tickFormat(d3.timeFormat("%a")))
 
       gy
         .transition()
         .call(yAxis)
 
       //select existing bars, if any
-      var gbars = g.selectAll(".gbar")
-        .data(daily)//, function(d) {console.log(d); return d})
+      var hourlyTrend = g.selectAll(".gline")
+        .data([hourly])//, function(d) {console.log(d); return d})
 
       //new items
-      var enter =  gbars.enter().append("g")
-        .attr("class", "gbar")
-
-      //add the bars, and high, low text labels
-      enter.append("text")
-        .attr("class", "hightemp")
-
-      enter.append("rect")
-        .attr("class", "bar")
-        .attr("fill", "url(#svgGradient)")
-
-      enter.append("text")
-        .attr("class", "lowtemp")
+      var enter =  hourlyTrend.enter().append("path")
+        .attr("class", "gline")
+        // .attr("d", line)
 
       //update the existing and new elements
-      var update = gbars.merge(enter)
-      //set x position
+      var update = hourlyTrend.merge(enter)
+      .transition()
+      .ease(d3.easeLinear)
+
+
       update
-        .attr("transform", function(d) { return `translate(${x2(new Date(d.time*1000))} ,0)`; })
-        .transition()
-
-      update.select(".bar")
-        .attr("y", function(d) { return y(d.temperatureMax); })
-        .attr("width", x2.bandwidth())
-        .attr("height", function(d) { return  y(d.temperatureMin)-y(d.temperatureMax) })
-        // .attr("fill", function(d){return colors(d.temperatureMin)})
-
-      update.select(".hightemp")
-        .text(function(d) {return `${d.temperatureMax}°`})
-        .attr("x", x2.bandwidth() / 2)
-        .attr("y", function(d) { return y(d.temperatureMax) })
-        // .attr("dy", -40)
-        .attr("text-anchor", "middle")
-
-      update.select(".lowtemp")
-        .text(function(d) {return `${d.temperatureMin}°`})
-        .attr("x", x2.bandwidth() / 2)
-        .attr("y", function(d) { return y(d.temperatureMin)+16; })
-        .attr("text-anchor", "middle")
+        .attr("d", line)
 
       //remove old ones
-      var exit = gbars.exit()
+      var exit = hourlyTrend.exit()
       exit.remove()
 
       //add current temp marker
-      var marker = g.selectAll(".now")
+      var marker = g.selectAll(".dot")
         .data(hourly)
 
-      var updateMarker = marker.enter().append("line")
-        .attr("class", "now")
+      var updateMarker = marker.enter().append("circle")
+        .attr("class", "dot")
         .merge(marker)
         .transition()
+        .ease(d3.easeLinear)
+
+
+      updateMarker
+      // .attr("cx", function(d) {return x2(d.humidity)})
+      .attr("cx", function(d) {return x2(d[propXScale])})
+        .attr("cy", function(d) {return y(d[propYScale])})
+        .attr("r", function(d) { return 2*fade(d.time)+1}) //add a scale
+        .attr("fill", "black") //fade into future
+        .attr("opacity", function(d) { return fade(d.time)})
+        // .attr("stroke", "red")
+        // .attr("stroke-opacity",function(d,i, arr) {return 1-i/arr.length})
 
 
       // var majorTicks = y.ticks(3)
@@ -255,8 +252,6 @@ svg {
 
 
       var updateTicks= enterTicks.merge(gticks)
-      .transition()
-
 
       updateTicks.select("line")
         .attr("x1", function(d) {return x2.range()[0]+1})
@@ -268,16 +263,10 @@ svg {
 
       gticks.exit().remove
 
-      updateMarker.attr("x1", x2.range()[0])
-        .attr("y1", function(d) {console.log(d.temperature); return y(d.temperature)})
-        .attr("x2", x2.bandwidth())
-        .attr("y2", function(d) {return y(d.temperature)})
-        .attr("stroke-width", 2)
-        .attr("stroke", "red")
-        .attr("stroke-opacity",function(d,i, arr) {return 1-i/arr.length})
 
-        gradhigh.attr("stop-color", colors(tempMax))
-        gradlow.attr("stop-color", colors(tempMin))
+
+        gradhigh.attr("stop-color", colors(yMax))
+        gradlow.attr("stop-color", colors(yMin))
 
       })
   }
@@ -314,12 +303,10 @@ svg {
   }
 
   // geoFindMe()
-  update()
+  update(propXScale, propYScale)
 
 </script>
 
-<a href="whatsapp://send?text=https%3A%2F%2Fwww.paperlesspost.com%2Fflyer%2Fgo%2FNaad3Q7FBZqyQNtXjb0V%3Futm_campaign%3Dflyer-share-dialog%26utm_source%3Dwhatsapp" data-action="share/whatsapp/share">Share via Whatsapp</a>
-<a href="https://api.whatsapp.com/send?text=https%3A%2F%2Fwww.paperlesspost.com%2Fflyer%2Fgo%2FNaad3Q7FBZqyQNtXjb0V%3Futm_campaign%3Dflyer-share-dialog%26utm_source%3Dwhatsapp" data-action="share/whatsapp/share">Share via Whatsapp</a>
 
 </body>
 </html>

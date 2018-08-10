@@ -111,43 +111,13 @@
         height = +svg.attr("height") - margin.top - margin.bottom;
 
 
-    var defs = svg.append("defs");
-    var gradient = defs.append("linearGradient")
-       .attr("id", "svgGradient")
-       .attr("x1", "0%")
-       .attr("x2", "0%")
-       .attr("y1", "0%")
-       .attr("y2", "100%")
-       .attr("gradientUnits","userSpaceOnUse")
-
-     //set the color gradient
-     var gradhigh = gradient.append("stop")
-        .attr('class', 'start')
-        .attr("offset", "0%")
-        // .attr("stop-color", colors(tempMax))
-        .attr("stop-opacity", 1);
-
-     var gradlow =  gradient.append("stop")
-        .attr('class', 'end')
-        .attr("offset", "100%")
-        // .attr("stop-color", colors(tempMin))
-        .attr("stop-opacity", 1);
-
-
-
-    //set the scales
-    // var x = d3.scaleTime().range([0, width-margin.left -margin.right])
-//     var x2 = d3.scaleBand()
-//       .range([0, width-margin.left-margin.right])
-//       .padding(0.2)
-
-//     var y = d3.scaleLinear()
-//       .range([height-margin.top, 0])
-    var r0Precip=150,
-        rMaxPrecip = 140,
+    var r0Precip=180,
+        rMaxPrecip = 170,
         rLowTemp = 75,
-        rHighTemp = 100
-
+        rHighTemp = 100,
+        rHourLabels = 140,
+        rMajorTick = r0Precip-20,
+        rMinorTick = r0Precip-10
 
 
     var thetaMinute = d3.scaleLinear()
@@ -217,10 +187,7 @@
 
 
 
-    var colors = d3.scaleLinear()
-      .domain([0,70,100]) //temps
-      .interpolate(d3.interpolateCubehelix)
-      .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,.5)]);
+
 
     //CREATE THE DOM
     var g = svg.append("g")
@@ -254,31 +221,32 @@
 
 
     var mTicks = d3.scaleLinear().domain([0,60])
+    var hTicks = d3.scaleLinear().domain([1,12])
 
     var minorTicks = gPrecip.selectAll(".rticks")
       .data(mTicks.ticks(60))
       .enter().append("line")
       .attr("class","rticks")
-      .attr("x1",function(d) { return (rMaxPrecip-5)*Math.cos(d*2*Math.PI/60 )})
+      .attr("x1",function(d) { return rMinorTick*Math.cos(d*2*Math.PI/60 )})
       .attr("x2",function(d) { return r0Precip*Math.cos(d*2*Math.PI/60 )})
-      .attr("y1",function(d) { return (rMaxPrecip-5)*Math.sin(d*2*Math.PI/60 )})
+      .attr("y1",function(d) { return rMinorTick*Math.sin(d*2*Math.PI/60 )})
       .attr("y2",function(d) { return r0Precip*Math.sin(d*2*Math.PI/60 )})
 
     var majorTicks = gPrecip.selectAll(".jticks")
       .data(mTicks.ticks(12))
       .enter().append("line")
       .attr("class","jticks")
-      .attr("x1",function(d) { return rMaxPrecip*Math.cos(d*2*Math.PI/60 )})
+      .attr("x1",function(d) { return rMajorTick*Math.cos(d*2*Math.PI/60 )})
       .attr("x2",function(d) { return r0Precip*Math.cos(d*2*Math.PI/60 )})
-      .attr("y1",function(d) { return rMaxPrecip*Math.sin(d*2*Math.PI/60 )})
+      .attr("y1",function(d) { return rMajorTick*Math.sin(d*2*Math.PI/60 )})
       .attr("y2",function(d) { return r0Precip*Math.sin(d*2*Math.PI/60 )})
 
     var majorTicks = gPrecip.selectAll(".labelMinutes")
-      .data(mTicks.ticks(12).slice(0,12))
+      .data(hTicks.ticks(12))
       .enter().append("text")
       .attr("class","labelMinutes")
-      .attr("x",function(d) { return 165*Math.cos(d*2*Math.PI/60 -Math.PI/2)})
-      .attr("y",function(d) { return 165*Math.sin(d*2*Math.PI/60 -Math.PI/2 )})
+      .attr("x",function(d) { return rHourLabels*Math.cos(d*2*Math.PI/12 -Math.PI/2)})
+      .attr("y",function(d) { return rHourLabels*Math.sin(d*2*Math.PI/12 -Math.PI/2 )})
       .attr("text-anchor","middle")
       .attr("alignment-baseline","central")
       .text(function(d){return d})
@@ -360,14 +328,6 @@
 
 
 
-
-
-
-
-      //remove old ones
-      // var exit = gbars.exit()
-      // exit.remove()
-
       //add current temp marker
       var marker = g.selectAll(".now")
         .data(hourly)
@@ -377,16 +337,7 @@
         .merge(marker)
 
 
-//       updateMarker.attr("x1", x2.range()[0])
-//         .attr("y1", function(d) {console.log(d.temperature); return y(d.temperature)})
-//         .attr("x2", x2.bandwidth())
-//         .attr("y2", function(d) {return y(d.temperature)})
-//         .attr("stroke-width", 2)
-//         .attr("stroke", "red")
-//         .attr("stroke-opacity",function(d,i, arr) {return 1-i/arr.length})
 
-        gradhigh.attr("stop-color", colors(tempMax))
-        gradlow.attr("stop-color", colors(tempMin))
 
       })
   }
@@ -426,7 +377,7 @@
   update()
 
   var step = function(timestamp) {
-    console.log("hi")
+    // console.log("hi")
 
         var minuteHand = gHands.selectAll(".minuteHand")
           .data([new Date()])
