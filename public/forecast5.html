@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+
+    .frame {
+      fill: none;
+      stroke: #000;
+    }
+    .gbar text {
+      fill: none;
+    }
+    .gbar:hover text {
+      fill:#ccc;
+    }
+    .temp {
+      font: 1em sans-serif;
+
+    }
+    .axis text {
+      font: 1.5em sans-serif;
+      text-anchor: right;
+    }
+
+
+    .axis line,
+    .axis circle {
+      fill: none;
+      stroke: #777;
+      stroke-dasharray: 1,4;
+    }
+
+    .axis :last-of-type circle {
+      stroke: #333;
+      stroke-dasharray: none;
+    }
+
+    .line, .gline {
+      fill: none;
+      stroke: red;
+      stroke-width: 1.5px;
+    }
+
+    .bar {
+      /* fill:#333; */
+    }
+
+    .major-axis {
+      stroke:#000;
+      stroke-width:1.5
+    }
+
+    svg {
+      fill: #ccc;
+    }
+
+  </style>
+
+</head>
+<body>
+  <svg width="400" height="250"></svg>
+    <p id="output">
+    </p>
+
+  <form method="get" id="coords" >
+    <input type="button" value="locate" onclick="geoFindMe()">
+    <input type="text" name="lat" id="lat">
+    <input type="text" name="lon" id="lon">
+    <input type="button" value="GO" onclick="fetch()">
+
+  </form>
+  <select onchange="javascript:propXScale=this.value;update(propXScale, propYScale)">
+    <option value="time">Time</option>
+    <option value="temperature">Temperature</option>
+    <option value="humidity">Humidity</option>
+    <option value="pressure">Pressure</option>
+    <option value="dewPoint">Dew Point</option>
+    <option value="precipProbability">Chance of Rain</option>
+    <option value="windSpeed">Wind Speed</option>
+    <option value="windBearing">Wind Direction</option>
+  </select>
+  <select onchange="javascript:propYScale=this.value;update(propXScale, propYScale)">
+    <option value="temperature">Temperature</option>
+    <option value="humidity">Humidity</option>
+    <option value="pressure">Pressure</option>
+    <option value="dewPoint">Dew Point</option>
+    <option value="precipProbability">Chance of Rain</option>
+    <option value="windSpeed">Wind Speed</option>
+
+  </select>
+  <select id="dynamicList"></select>
+  <!-- <button onclick="update()">GO</button> -->
+<script src="//d3js.org/d3.v4.min.js"></script>
+<script>
+
+    //get the svg element
+    var svg = d3.select("svg"),
+        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom;
+    var body = d3.select("body")
+
+
+    var defs = svg.append("defs");
+    var gradient = defs.append("linearGradient")
+       .attr("id", "svgGradient")
+       .attr("x1", "0%")
+       .attr("x2", "0%")
+       .attr("y1", "0%")
+       .attr("y2", "100%")
+       .attr("gradientUnits","userSpaceOnUse")
+
+     //set the color gradient
+     var gradhigh = gradient.append("stop")
+        .attr('class', 'start')
+        .attr("offset", "0%")
+        // .attr("stop-color", colors(yMax))
+        .attr("stop-opacity", 1);
+
+     var gradlow =  gradient.append("stop")
+        .attr('class', 'end')
+        .attr("offset", "100%")
+        // .attr("stop-color", colors(yMin))
+        .attr("stop-opacity", 1);
+
+
+
+    //set the scales
+    var x2 = d3.scaleLinear()
+      .domain([0,1])
+      .range([0, width-margin.left-margin.right])
+      // .padding(0.2)
+
+    var y = d3.scaleLinear()
+      .range([height-margin.top, 0])
+
+    var fade = d3.scaleTime()
+      .range([1,0])
+
+    propXScale = "time"
+    propYScale = "temperature"
+
+
+    var colors = d3.scaleLinear()
+      .domain([0,65,75,100]) //temps
+      .interpolate(d3.interpolateCubehelix)
+      .range([d3.hsl(220,1, .5), d3.hsl(220,1,1), d3.hsl(0,1,1), d3.hsl(0,1,.5)]);
+
+    //create the parent element
+    var g = svg.append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    //set the axes
+    var gx = g.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", "translate(0," + height + ")")
+
+    var gy = g.append("g")
+        .attr("class", "axis axis--y")
+
+  var globaldata=[]
+
+  var fetch = function() {
+    //call the weather api at the specified location
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var url = "/weather"+
+      "?lat="+fieldLat.value+
+      "&lon="+fieldLon.value
+
+
+
+
+    //get the data and update the graph
+    d3.json(url, function(data) {
+      // console.log(data);
+      globaldata=data
+
+      update(propXScale, propYScale)
+      })
+  }
+
+  var update = function(propXScale, propYScale) {
+    var hourly = globaldata.hourly.data
+    console.log(hourly)
+
+    var xMax = d3.max(hourly.map(function(d) {return (d[propXScale])}))
+    var xMin = d3.min(hourly.map(function(d) {return (d[propXScale])}))
+    // x2.domain([0,1]) //humidity
+    x2.domain([xMin, xMax]) //dewPoint
+
+    var currentY = Math.round(globaldata.currently[propYScale])
+    var yMax = d3.max(hourly.map(function(d) {return (d[propYScale])}))
+    var yMin = d3.min(hourly.map(function(d) {return (d[propYScale])}))
+    y.domain([yMin, yMax])
+
+    var timeMax = d3.max(hourly.map(function(d) {return (d.time)}))
+    fade.domain([hourly[0].time, timeMax])
+
+    var line = d3.line()
+      .x(function(d) {console.log(d);return x2(d[propXScale])})
+      .y(function(d) {return y(d[propYScale])})
+      // .curve()
+
+    //set the high, low, current temp ticks
+    var yAxis = d3.axisLeft(y)
+    var yTicks = y.ticks(0)
+    yTicks.push(yMax)
+    yTicks.push(currentY)
+    yTicks.push(yMin)
+    yAxis.tickValues(yTicks)
+    console.log(yTicks);
+
+    gx.call(d3.axisBottom(x2)
+      .ticks(7))
+      // .tickFormat(d3.timeFormat("%a")))
+
+    gy
+      .transition()
+      .call(yAxis)
+
+    //select existing bars, if any
+    var hourlyTrend = g.selectAll(".gline")
+      .data([hourly])//, function(d) {console.log(d); return d})
+
+    //new items
+    var enter =  hourlyTrend.enter().append("path")
+      .attr("class", "gline")
+      // .attr("d", line)
+
+    //update the existing and new elements
+    var update = hourlyTrend.merge(enter)
+    .transition()
+    .ease(d3.easeLinear)
+
+
+    update
+      .attr("d", line)
+
+    //remove old ones
+    var exit = hourlyTrend.exit()
+    exit.remove()
+
+    //add current temp marker
+    var marker = g.selectAll(".dot")
+      .data(hourly)
+
+    var updateMarker = marker.enter().append("circle")
+      .attr("class", "dot")
+      .merge(marker)
+      .transition()
+      .ease(d3.easeLinear)
+
+
+    updateMarker
+    // .attr("cx", function(d) {return x2(d.humidity)})
+      .attr("cx", function(d) {return x2(d[propXScale])})
+      .attr("cy", function(d) {return y(d[propYScale])})
+      .attr("r", function(d) { return 2*fade(d.time)+1}) //add a scale
+      .attr("fill", "black") //fade into future
+      .attr("opacity", function(d) { return fade(d.time)})
+      // .attr("stroke", "red")
+      // .attr("stroke-opacity",function(d,i, arr) {return 1-i/arr.length})
+
+
+    // var majorTicks = y.ticks(3)
+      // majorTicks.push(32)
+
+    var gticks = g.selectAll(".lines")
+      .data([0,10,20,30,40,50,60,70,80,90,100,110])
+      // .exit().remove()
+    var enterTicks = gticks
+      .enter().append("g")
+      .attr("class","lines")
+
+    enterTicks.append("line")
+      // .attr("class")
+
+
+    var updateTicks= enterTicks.merge(gticks)
+
+    updateTicks.select("line")
+      .attr("x1", function(d) {return x2.range()[0]+1})
+      .attr("y1", function(d) {return y(d)})
+      .attr("x2", function(d) {return x2.range()[1]})
+      .attr("y2", function(d) {return y(d)})
+      .attr("stroke-width", 3)
+      .attr("stroke", "white")
+
+    gticks.exit().remove
+
+
+
+      gradhigh.attr("stop-color", colors(yMax))
+      gradlow.attr("stop-color", colors(yMin))
+  }
+
+  function geoFindMe() {
+    var fieldLat = document.getElementById("lat");
+    var fieldLon = document.getElementById("lon");
+    var output = document.getElementById('output')
+
+    if (!navigator.geolocation){
+      output.innerHTML = "<p>Geolocation is not supported by your browser</p>";
+      return;
+    }
+
+    function success(position) {
+      console.log("geo find succcess");
+      var latitude  = position.coords.latitude;
+      var longitude = position.coords.longitude;
+
+      fieldLat.value=latitude
+      fieldLon.value=longitude
+
+      output.innerHTML = ""
+    }
+
+    function error() {
+
+      output.innerHTML = "Unable to retrieve your location";
+    }
+
+    output.innerHTML = "<p>Locating…</p>";
+
+    navigator.geolocation.getCurrentPosition(success, error);
+  }
+
+  // geoFindMe()
+  fetch()
+  // update(propXScale, propYScale)
+
+var sampleScale = [
+  {
+      label:"Temperature",
+      param:"temperature",
+      domain: {
+        auto:true
+      }
+  },{
+    label:"Dew Point",
+    param:"dewPoint",
+    domain:{
+      auto:false,
+      minmax:[0,100]
+    }
+    //format:d3.timeFormat("%a")
+  }
+]
+
+var selectXScale = body.selectAll("#dynamicList")
+  .data([sampleScale])
+  .on("change", function(d){
+    var i = this.selectedIndex
+    var selectedData = d3.select(this).data()[0][i]
+    changeYAxis(selectedData)
+    // console.log(this.selectedIndex);
+    // console.log(d3.select(this).data()[0][i])
+  })
+
+var selectOption = selectXScale.selectAll(".dropdown")
+    // .data(sampleScale)
+    .data(function(d,i) {console.log(i);return d })
+    // .on("change", function(d){console.log(this);return this})
+
+//new items
+var enterOption =  selectOption.enter()
+  .append("option")
+  .attr("class", "dropdown")
+
+//update the existing and new elements
+var updateOption = selectOption.merge(enterOption)
+
+//update properties for new and existing items
+updateOption
+  .attr("value", function(d){console.log(d);return d.param})
+  .html(function(d){return d.label})
+  .on("click", function(d) {changeYAxis(d)})
+
+//remove old ones
+var exitOption = selectOption.exit()
+exitOption.remove()
+
+function changeYAxis(scale) {
+  console.log(scale);
+  var minmax=[]
+  if (scale.domain.auto) {
+    //TODO: only push the tempertature value, not the whole onject
+    minmax.push(globaldata.hourly.data.reduce(function(d, low){return d[scale.param]>low?d[scale.param]:low}))
+    minmax.push(globaldata.hourly.data.reduce(function(d, high){return d[scale.param]>high?d[scale.param]:high}))
+    console.log(minmax);
+
+  } else {
+    minmax=scale.domain.minmax
+  }
+  y.domain(minmax)
+
+  //set the high, low, current temp ticks
+  var yAxis = d3.axisLeft(y)
+  var yTicks = y.ticks(0)
+  yTicks.push(minmax[1])
+  // yTicks.push(currentY)
+  yTicks.push(minmax[0])
+  yAxis.tickValues(yTicks)
+  console.log(yTicks);
+
+    // .tickFormat(d3.timeFormat("%a")))
+
+  gy
+    .transition()
+    .call(yAxis)
+
+  }
+
+</script>
+
+
+
+
+</body>
+</html>
