@@ -80,6 +80,11 @@
   stroke:#000;
   stroke-width:1.5
 }
+.labelHours {
+  font-family: sans-serif;
+  font-size: 2em;
+}
+
 
 /* svg {
   fill: #ccc;
@@ -111,16 +116,20 @@
         height = +svg.attr("height") - margin.top - margin.bottom;
 
 
-    var r0Precip=180,
+    var r0Precip=120,
         rMaxPrecip = 170,
         rLowTemp = 75,
         rHighTemp = 100,
-        rHourLabels = 140,
         rMajorTick = r0Precip-20,
         rMinorTick = r0Precip-10,
-        rWatchFace = 180
-        rHourDial = rWatchFace *.75
-        rMinuteDial = rWatchFace * 3
+        rWatchFace = 210,
+        rMinuteDial = rWatchFace * 3,
+        rInner = 120,
+        rHourLabels = rInner-15,
+
+        rHourDial = rInner,
+
+        rOffsetHours = 2*rInner
 
 
 
@@ -206,6 +215,11 @@
     g.append("circle")
       .attr("class","background")
       .attr("r",149)
+      g.append("circle")
+        // .attr("class","background")
+        .attr("r",rInner)
+        .attr("fill","blue")
+
 
     //set the axes
     var gr = g.append("g")
@@ -221,16 +235,20 @@
     var minuteDial = g.append("g")
         .attr("class", "minuteDial")
 
+    hourDial.append("circle")
+      .attr("r",rHourDial)
+      .attr("fill","white")
+
     //add the 12 numerals, and place them accordingly
     var hourNumerals = hourDial.selectAll(".labelHours")
       .data(hTicks.ticks(12))
       .enter().append("text")
       .attr("class","labelHours")
-      .attr("x",function(d) { return rHourLabels*Math.cos(d/12*2*Math.PI -Math.PI/2)})
-      .attr("y",function(d) { return rHourLabels*Math.sin(d/12*2*Math.PI -Math.PI/2 )})
+      .attr("x",function(d) { return rHourLabels*Math.cos(Math.PI/2+(d/12*2*Math.PI))})
+      .attr("y",function(d) { return rHourLabels*Math.sin(Math.PI/2+(d/12*2*Math.PI) )})
       .attr("text-anchor","middle")
       .attr("alignment-baseline","central")
-      .attr("transform", function(d){return `rotate(${d/6*2*Math.PI})`})
+      .attr("transform", function(d){return `rotate(${-(d/6)*360})`})
       .text(function(d){return d})
 
 
@@ -276,9 +294,11 @@
 
 
   var update = function(data) {
+    var deltaT = (data.getHours()%12+data.getMinutes()/60)/12
+    // console.log(deltaT);
     //data is a timestamp
     var selectHourDial = g.selectAll(".hourDial")
-      .data([data])
+      .data([deltaT])
 
     //new items
     var enterHourDial =  selectHourDial.enter()
@@ -290,11 +310,12 @@
 
     //update properties for new and existing items
     updateHourDial
-      .attr("transform", function(d){
-        var theta=Math.PI/2-d*2*Math.PI
-        var offset= [Math.cos(theta),Math.sin(theta)]
+      .attr("transform", function(d) {
+        var theta=Math.PI/2-(d*2*Math.PI)
+        var offset= [rOffsetHours*Math.cos(theta), rOffsetHours*Math.sin(theta)]
+
         //move the dial where the hour hand would go, and rotate the face to line up the numeral
-        return `translate(${offset[0]}, ${offset[1]} rotate(${theta*180/Math.PI},${offset[0]},${offset[1]})`
+        return `translate(${offset[0]}, ${-offset[1]}) rotate(${2*d*360})`
       })
 
     //remove old ones
@@ -307,11 +328,11 @@
 
 
 
-  update()
+  // update()
 
   var step = function(timestamp) {
     // console.log("hi")
-    var now = new Date()
+    var now = new Date(2018,11,25,23,00)
 
     //every minute, rotate the hourDial about the watchFace center, and its own center
     update(now)
