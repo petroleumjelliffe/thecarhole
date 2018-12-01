@@ -93,7 +93,13 @@
 </style>
 </head>
 <body>
-  <svg width="450" height="450"></svg>
+  <svg width="450" height="450">
+    <mask id="bezel">
+      <rect x="-250" y="-250" width="500" height="500" fill="black"></rect>
+      <circle r="180" x="0" y="0" fill="white" ></circle>
+    </mask>
+  </svg>
+
     <p id="output">
 
     </p>
@@ -120,7 +126,7 @@
         rMaxPrecip = 170,
         rLowTemp = 75,
         rHighTemp = 100,
-        rWatchFace = 210,
+        // rWatchFace = 210,
 
         rInner = 90,
         rOuter= rInner*1.5,
@@ -137,71 +143,71 @@
 
 
 
-    var thetaMinute = d3.scaleLinear()
-      .domain([0,60])
-      .range([0,2*Math.PI])
-
-    var thetaDay = d3.scaleLinear()
-      .domain([0,24])
-      .range([0,8*Math.PI/2])
-
-    var rTempRange = d3.scaleLinear()
-      .range([rLowTemp, rHighTemp])
-
-    var rPrecipIntensity = d3.scaleLinear()
-      .range([rMaxPrecip ,rOuter])
-      .domain([.1,0])
+    // var thetaMinute = d3.scaleLinear()
+    //   .domain([0,60])
+    //   .range([0,2*Math.PI])
+    //
+    // var thetaDay = d3.scaleLinear()
+    //   .domain([0,24])
+    //   .range([0,8*Math.PI/2])
+    //
+    // var rTempRange = d3.scaleLinear()
+    //   .range([rLowTemp, rHighTemp])
+    //
+    // var rPrecipIntensity = d3.scaleLinear()
+    //   .range([rMaxPrecip ,rOuter])
+    //   .domain([.1,0])
 
     //precipitation
-    var minutelyTrend = d3.radialLine()
-      .angle(function(d) {
-        var time = new Date(d.time*1000)
-        console.log(time)
-        console.log(time.getMinutes())
-        return thetaMinute(time.getMinutes())
-      })
-      // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
-      .radius(function(d) {return rPrecipIntensity(d.precipIntensity)})
-      .curve(d3.curveCatmullRom)
+    // var minutelyTrend = d3.radialLine()
+    //   .angle(function(d) {
+    //     var time = new Date(d.time*1000)
+    //     console.log(time)
+    //     console.log(time.getMinutes())
+    //     return thetaMinute(time.getMinutes())
+    //   })
+    //   // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
+    //   .radius(function(d) {return rPrecipIntensity(d.precipIntensity)})
+    //   .curve(d3.curveCatmullRom)
 
     //temperature by the hour
-    var hourlyTrend = d3.radialLine()
-      .angle(function(d) {
-        var time = new Date(d.time*1000)
-        console.log(time.getHours())
-
-        return thetaDay(time.getHours())
-      })
-      // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
-      .radius(function(d) {return rTempRange(d.temperature)})
-      // .curve(d3.curveCatmullRom)
-
-      function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-        var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
-
-        return {
-          x: centerX + (radius * Math.cos(angleInRadians)),
-          y: centerY + (radius * Math.sin(angleInRadians))
-        };
-      }
-
-      function describeArc(x, y, radius, startAngle, endAngle){
-
-          var start = polarToCartesian(x, y, radius, endAngle);
-          var end = polarToCartesian(x, y, radius, startAngle);
-
-          var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-          var d = [
-              "M", start.x, start.y,
-              "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
-          ].join(" ");
-
-          return d;
-      }
-      console.log(describeArc(width/2,height/2,30,0,30));
-      console.log(describeArc(width/2,height/2,50,30,0));
-
+    // var hourlyTrend = d3.radialLine()
+    //   .angle(function(d) {
+    //     var time = new Date(d.time*1000)
+    //     console.log(time.getHours())
+    //
+    //     return thetaDay(time.getHours())
+    //   })
+    //   // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
+    //   .radius(function(d) {return rTempRange(d.temperature)})
+    //   // .curve(d3.curveCatmullRom)
+    //
+    //   function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
+    //     var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
+    //
+    //     return {
+    //       x: centerX + (radius * Math.cos(angleInRadians)),
+    //       y: centerY + (radius * Math.sin(angleInRadians))
+    //     };
+    //   }
+    //
+    //   function describeArc(x, y, radius, startAngle, endAngle){
+    //
+    //       var start = polarToCartesian(x, y, radius, endAngle);
+    //       var end = polarToCartesian(x, y, radius, startAngle);
+    //
+    //       var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    //
+    //       var d = [
+    //           "M", start.x, start.y,
+    //           "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
+    //       ].join(" ");
+    //
+    //       return d;
+    //   }
+    //   console.log(describeArc(width/2,height/2,30,0,30));
+    //   console.log(describeArc(width/2,height/2,50,30,0));
+    //
 
 
 
@@ -212,17 +218,17 @@
     //hourDial is a group that contains taxt digits  1-12
     //minuteDial is a group that contains major and minor ticks
     var g = svg.append("g")
-        .attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+        .attr("transform", "translate(" + width/2 + "," + height/2 + ")")
+        .attr("mask", "url(#bezel)")
 
-
-
-    g.append("circle")
-      .attr("class","background")
-      .attr("r",rOuter)
-      g.append("circle")
-        // .attr("class","background")
-        .attr("r",rInner)
-        .attr("fill","blue")
+    // g.append("circle")
+    //   .attr("class","background")
+    //   .attr("r",rOuter)
+    //
+    // g.append("circle")
+    //   // .attr("class","background")
+    //   .attr("r",rInner)
+    //   .attr("fill","blue")
 
 
     //set the axes
@@ -233,6 +239,7 @@
     var hTicks = d3.scaleLinear().domain([1,12])
     var mTicks = d3.scaleLinear().domain([0,59])
 
+    //Set up the watch dials and hands z-indexes
     //create a HourDial to contain the numerals, and be rotated accordingly
     g.append("line")
       .attr("class","minuteHand")
