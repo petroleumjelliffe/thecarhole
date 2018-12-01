@@ -82,7 +82,7 @@
 }
 .labelHours {
   font-family: sans-serif;
-  font-size: 2em;
+  font-size: 1.5em;
 }
 
 
@@ -116,20 +116,24 @@
         height = +svg.attr("height") - margin.top - margin.bottom;
 
 
-    var r0Precip=120,
+    var rOuter=120,
         rMaxPrecip = 170,
         rLowTemp = 75,
         rHighTemp = 100,
-        rMajorTick = r0Precip-20,
-        rMinorTick = r0Precip-10,
         rWatchFace = 210,
-        rMinuteDial = rWatchFace * 3,
-        rInner = 120,
+
+        rInner = 90,
+        rOuter= rInner*1.5,
+
         rHourLabels = rInner-15,
-
         rHourDial = rInner,
+        rOffsetHours = 2*rInner,
 
-        rOffsetHours = 2*rInner
+        rMinuteLabels = rOuter-30,
+        rMinuteDial = rOuter,
+        rOffsetMinutes = 2*rOuter,
+        rMajorTick = rOuter-20,
+        rMinorTick = rOuter-10
 
 
 
@@ -145,7 +149,7 @@
       .range([rLowTemp, rHighTemp])
 
     var rPrecipIntensity = d3.scaleLinear()
-      .range([rMaxPrecip ,r0Precip])
+      .range([rMaxPrecip ,rOuter])
       .domain([.1,0])
 
     //precipitation
@@ -214,7 +218,7 @@
 
     g.append("circle")
       .attr("class","background")
-      .attr("r",149)
+      .attr("r",rOuter)
       g.append("circle")
         // .attr("class","background")
         .attr("r",rInner)
@@ -222,22 +226,37 @@
 
 
     //set the axes
-    var gr = g.append("g")
-        .attr("class", "axis axis--r")
+    // var gr = g.append("g")
+    //     .attr("class", "axis axis--r")
         // .attr("transform", "translate(0," + height + ")")
 
-    var mTicks = d3.scaleLinear().domain([0,60])
     var hTicks = d3.scaleLinear().domain([1,12])
+    var mTicks = d3.scaleLinear().domain([0,59])
 
     //create a HourDial to contain the numerals, and be rotated accordingly
+    g.append("line")
+      .attr("class","minuteHand")
+            .attr("x1",0)
+          .attr("y1",0)
+
     var hourDial = g.append("g")
         .attr("class", "hourDial")
+
+    g.append("line")
+      .attr("class","hourHand")
+            .attr("x1",0)
+          .attr("y1",0)
+
     var minuteDial = g.append("g")
         .attr("class", "minuteDial")
 
     hourDial.append("circle")
       .attr("r",rHourDial)
-      .attr("fill","white")
+      .attr("fill","#ccc")
+
+    minuteDial.append("circle")
+      .attr("r",rMinuteDial)
+      .attr("fill","#999")
 
     //add the 12 numerals, and place them accordingly
     var hourNumerals = hourDial.selectAll(".labelHours")
@@ -251,40 +270,40 @@
       .attr("transform", function(d){return `rotate(${-(d/6)*360})`})
       .text(function(d){return d})
 
+    //add the 12 numerals, and place them accordingly
+    var minuteNumerals = minuteDial.selectAll(".labelMinutes")
+      .data(mTicks.ticks(12))
+      .enter().append("text")
+      .attr("class","labelMinutes")
+      .attr("x",function(d) { return rMinuteLabels*Math.cos(Math.PI/2+(d/60*2*Math.PI))})
+      .attr("y",function(d) { return rMinuteLabels*Math.sin(Math.PI/2+(d/60*2*Math.PI) )})
+      .attr("text-anchor","middle")
+      .attr("alignment-baseline","central")
+      .attr("transform", function(d){return `rotate(${-(d/30)*360})`})
+      .text(function(d){return d})
 
     var minorTicks = minuteDial.selectAll(".rticks")
       .data(mTicks.ticks(60))
       .enter().append("line")
       .attr("class","rticks")
       .attr("x1",function(d) { return rMinorTick*Math.cos(d*2*Math.PI/60 )})
-      .attr("x2",function(d) { return r0Precip*Math.cos(d*2*Math.PI/60 )})
+      .attr("x2",function(d) { return rOuter*Math.cos(d*2*Math.PI/60 )})
       .attr("y1",function(d) { return rMinorTick*Math.sin(d*2*Math.PI/60 )})
-      .attr("y2",function(d) { return r0Precip*Math.sin(d*2*Math.PI/60 )})
+      .attr("y2",function(d) { return rOuter*Math.sin(d*2*Math.PI/60 )})
 
     var majorTicks = minuteDial.selectAll(".hticks")
       .data(mTicks.ticks(12))
       .enter().append("line")
       .attr("class","hticks")
       .attr("x1",function(d) { return rMajorTick*Math.cos(d*2*Math.PI/60 )})
-      .attr("x2",function(d) { return r0Precip*Math.cos(d*2*Math.PI/60 )})
+      .attr("x2",function(d) { return rOuter*Math.cos(d*2*Math.PI/60 )})
       .attr("y1",function(d) { return rMajorTick*Math.sin(d*2*Math.PI/60 )})
-      .attr("y2",function(d) { return r0Precip*Math.sin(d*2*Math.PI/60 )})
+      .attr("y2",function(d) { return rOuter*Math.sin(d*2*Math.PI/60 )})
 
 
 
-    var gHands = g.append("g")
-        .attr("class", "hands")
-
-    gHands.append("line")
-      .attr("class","minuteHand")
-            .attr("x1",0)
-          .attr("y1",0)
-
-
-    gHands.append("line")
-      .attr("class","hourHand")
-            .attr("x1",0)
-          .attr("y1",0)
+    // var gHands = g.append("g")
+    //     .attr("class", "hands")
 
 
 
@@ -292,6 +311,14 @@
 
 
 
+
+  var revolve = function(d, rOffset) {
+    var theta=Math.PI/2-(d*2*Math.PI)
+    var offset= [rOffset*Math.cos(theta), rOffset*Math.sin(theta)]
+
+    //move the dial where the hour hand would go, and rotate the face to line up the numeral
+    return `translate(${offset[0]}, ${-offset[1]}) rotate(${2*d*360})`
+  }
 
   var update = function(data) {
     var deltaT = (data.getHours()%12+data.getMinutes()/60)/12
@@ -299,6 +326,7 @@
     //data is a timestamp
     var selectHourDial = g.selectAll(".hourDial")
       .data([deltaT])
+
 
     //new items
     var enterHourDial =  selectHourDial.enter()
@@ -311,16 +339,38 @@
     //update properties for new and existing items
     updateHourDial
       .attr("transform", function(d) {
-        var theta=Math.PI/2-(d*2*Math.PI)
-        var offset= [rOffsetHours*Math.cos(theta), rOffsetHours*Math.sin(theta)]
 
         //move the dial where the hour hand would go, and rotate the face to line up the numeral
-        return `translate(${offset[0]}, ${-offset[1]}) rotate(${2*d*360})`
+        return revolve(d, rOffsetHours)
       })
 
     //remove old ones
     var exitHourDial = selectHourDial.exit()
     exitHourDial.remove()
+
+    var selectMinuteDial = g.selectAll(".minuteDial")
+      .data([(data.getMinutes()+data.getSeconds()/60)/60])
+console.log((data.getMinutes()+data.getSeconds()/60)/60);
+
+    //new items
+    var enterMinuteDial =  selectMinuteDial.enter()
+      .append("g")
+      .attr("class", "minuteDial")
+
+    //update the existing and new elements
+    var updateMinuteDial = selectMinuteDial.merge(enterMinuteDial)
+
+    //update properties for new and existing items
+    updateMinuteDial
+      .attr("transform", function(d) {
+
+      //move the dial where the hour hand would go, and rotate the face to line up the numeral
+      return revolve(d, rOffsetMinutes)
+      })
+
+    //remove old ones
+    var exitMinuteDial = selectMinuteDial.exit()
+    exitMinuteDial.remove()
 
   }
 
@@ -337,15 +387,15 @@
     //every minute, rotate the hourDial about the watchFace center, and its own center
     update(now)
 
-        var minuteHand = gHands.selectAll(".minuteHand")
-          .data([new Date()])
-          .attr("x2",function(d) { return r0Precip * Math.cos((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
-          .attr("y2",function(d) { return r0Precip * Math.sin((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
+    var minuteHand = g.selectAll(".minuteHand")
+      .data([now])
+      .attr("x2",function(d) { return rOuter * Math.cos((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
+      .attr("y2",function(d) { return rOuter * Math.sin((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
 
-        var hourHand = gHands.selectAll(".hourHand")
-          .data([new Date()])
-          .attr("x2",function(d) { return rHighTemp * Math.cos((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
-          .attr("y2",function(d) { return rHighTemp * Math.sin((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
+    var hourHand = g.selectAll(".hourHand")
+      .data([now])
+      .attr("x2",function(d) { return rInner * Math.cos((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
+      .attr("y2",function(d) { return rInner * Math.sin((d.getHours()-d.getTimezoneOffset()+d.getMinutes()/60)*2*Math.PI/12 -Math.PI/2)})
 
     window.requestAnimationFrame(step);
 
