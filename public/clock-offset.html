@@ -14,7 +14,10 @@
     stroke-width:4px;
     stroke-linecap:round;
   }
-  .background{fill:#0cf}
+  .background{
+    fill:#fff;
+    stroke: #666 ;
+  }
 .temp {
   fill:none;
   stroke:#666;
@@ -93,11 +96,16 @@
 </style>
 </head>
 <body>
-  <svg width="450" height="450">
+  <svg width="375" height="375">
     <mask id="bezel">
-      <rect x="-250" y="-250" width="500" height="500" fill="black"></rect>
-      <circle r="180" x="0" y="0" fill="white" ></circle>
+      <!-- <rect x="-93.75" y="-93.75" width="500" height="500" fill="black"></rect> -->
+      <circle r="187" x="0" y="0" fill="white" ></circle>
     </mask>
+    <mask id="bezelInner">
+      <!-- <rect x="-93.75" y="-93.75" width="500" height="500" fill="black"></rect> -->
+      <circle r="150" x="0" y="0" fill="white" ></circle>
+    </mask>
+
   </svg>
 
     <p id="output">
@@ -117,7 +125,7 @@
 
     //get the svg element
     var svg = d3.select("svg"),
-        margin = {top: 20, right: 20, bottom: 30, left: 40},
+        margin = {top: 0, right: 0, bottom: 0, left: 0},
         width = +svg.attr("width") - margin.left - margin.right,
         height = +svg.attr("height") - margin.top - margin.bottom;
 
@@ -128,8 +136,9 @@
         rHighTemp = 100,
         // rWatchFace = 210,
 
-        rInner = 90,
-        rOuter= rInner*1.5,
+        rOuter= 375/2.0-50,
+
+        rInner = rOuter/1.5,
 
         rHourLabels = rInner-15,
         rHourDial = rInner,
@@ -143,73 +152,6 @@
 
 
 
-    // var thetaMinute = d3.scaleLinear()
-    //   .domain([0,60])
-    //   .range([0,2*Math.PI])
-    //
-    // var thetaDay = d3.scaleLinear()
-    //   .domain([0,24])
-    //   .range([0,8*Math.PI/2])
-    //
-    // var rTempRange = d3.scaleLinear()
-    //   .range([rLowTemp, rHighTemp])
-    //
-    // var rPrecipIntensity = d3.scaleLinear()
-    //   .range([rMaxPrecip ,rOuter])
-    //   .domain([.1,0])
-
-    //precipitation
-    // var minutelyTrend = d3.radialLine()
-    //   .angle(function(d) {
-    //     var time = new Date(d.time*1000)
-    //     console.log(time)
-    //     console.log(time.getMinutes())
-    //     return thetaMinute(time.getMinutes())
-    //   })
-    //   // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
-    //   .radius(function(d) {return rPrecipIntensity(d.precipIntensity)})
-    //   .curve(d3.curveCatmullRom)
-
-    //temperature by the hour
-    // var hourlyTrend = d3.radialLine()
-    //   .angle(function(d) {
-    //     var time = new Date(d.time*1000)
-    //     console.log(time.getHours())
-    //
-    //     return thetaDay(time.getHours())
-    //   })
-    //   // .radius(function(d) {return r(Math.cos((theta1year(offsetDate(d, now))+Math.PI)/4))})
-    //   .radius(function(d) {return rTempRange(d.temperature)})
-    //   // .curve(d3.curveCatmullRom)
-    //
-    //   function polarToCartesian(centerX, centerY, radius, angleInDegrees) {
-    //     var angleInRadians = (angleInDegrees-90) * Math.PI / 180.0;
-    //
-    //     return {
-    //       x: centerX + (radius * Math.cos(angleInRadians)),
-    //       y: centerY + (radius * Math.sin(angleInRadians))
-    //     };
-    //   }
-    //
-    //   function describeArc(x, y, radius, startAngle, endAngle){
-    //
-    //       var start = polarToCartesian(x, y, radius, endAngle);
-    //       var end = polarToCartesian(x, y, radius, startAngle);
-    //
-    //       var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-    //
-    //       var d = [
-    //           "M", start.x, start.y,
-    //           "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
-    //       ].join(" ");
-    //
-    //       return d;
-    //   }
-    //   console.log(describeArc(width/2,height/2,30,0,30));
-    //   console.log(describeArc(width/2,height/2,50,30,0));
-    //
-
-
 
 
     //CREATE THE DOM
@@ -219,17 +161,21 @@
     //minuteDial is a group that contains major and minor ticks
     var g = svg.append("g")
         .attr("transform", "translate(" + width/2 + "," + height/2 + ")")
+        .attr("mask", "url(#bezelInner)")
+    var gMinute = svg.append("g")
+        .attr("transform", "translate(" + width/2 + "," + height/2 + ")")
         .attr("mask", "url(#bezel)")
 
-    // g.append("circle")
-    //   .attr("class","background")
-    //   .attr("r",rOuter)
-    //
-    // g.append("circle")
-    //   // .attr("class","background")
-    //   .attr("r",rInner)
-    //   .attr("fill","blue")
 
+
+      g.append("circle")
+        .attr("class","background")
+        .attr("r",rOuter)
+
+        g.append("circle")
+          .attr("class","background")
+          .attr("r",rInner)
+          // .attr("class","")
 
     //set the axes
     // var gr = g.append("g")
@@ -241,7 +187,7 @@
 
     //Set up the watch dials and hands z-indexes
     //create a HourDial to contain the numerals, and be rotated accordingly
-    g.append("line")
+    gMinute.append("line")
       .attr("class","minuteHand")
             .attr("x1",0)
           .attr("y1",0)
@@ -249,12 +195,13 @@
     var hourDial = g.append("g")
         .attr("class", "hourDial")
 
+
     g.append("line")
       .attr("class","hourHand")
             .attr("x1",0)
           .attr("y1",0)
 
-    var minuteDial = g.append("g")
+    var minuteDial = gMinute.append("g")
         .attr("class", "minuteDial")
 
     hourDial.append("circle")
@@ -355,7 +302,7 @@
     var exitHourDial = selectHourDial.exit()
     exitHourDial.remove()
 
-    var selectMinuteDial = g.selectAll(".minuteDial")
+    var selectMinuteDial = gMinute.selectAll(".minuteDial")
       .data([(data.getMinutes()+data.getSeconds()/60)/60])
 console.log((data.getMinutes()+data.getSeconds()/60)/60);
 
@@ -394,7 +341,7 @@ console.log((data.getMinutes()+data.getSeconds()/60)/60);
     //every minute, rotate the hourDial about the watchFace center, and its own center
     update(now)
 
-    var minuteHand = g.selectAll(".minuteHand")
+    var minuteHand = gMinute.selectAll(".minuteHand")
       .data([now])
       .attr("x2",function(d) { return rOuter * Math.cos((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
       .attr("y2",function(d) { return rOuter * Math.sin((d.getMinutes()+d.getSeconds()/60)*2*Math.PI/60 -Math.PI/2)})
