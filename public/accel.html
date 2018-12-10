@@ -1,0 +1,13 @@
+<script>
+
+var move =function(avx, dt) {
+  return [
+    avx[0],
+    avx[0]*dt+avx[1]  ,
+    .5*avx[0]*dt^2+avx[1]*dt+avx[2]
+  ]
+
+}
+
+
+</script>
